@@ -318,7 +318,7 @@ function debounce(fn, ms) {
 const STORE_KEY   = 'novapace.activity';
 const STORE_VER   = 2;     // 2 = effective metres; 1 stored raw distance
 const REF_DAYS    = 30;    // days that count towards the reference distance
-const REF_DEFAULT = 200;   // effective metres, until the patient has history
+const REF_DEFAULT = 1000;  // effective metres, until the patient has history
 const KEEP_DAYS   = 400;   // history older than this is dropped on load
 
 // Local date, not UTC: the day has to roll over at the patient's midnight.

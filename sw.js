@@ -7,7 +7,7 @@
 // WICHTIG: Bei jeder Änderung an index.html oder den Assets CACHE hochzählen.
 // Der alte Cache wird beim activate gelöscht; ohne neuen Namen bliebe eine
 // bereits installierte App auf ihrer alten Fassung stehen.
-const CACHE = 'novapace-clip-v1';
+const CACHE = 'novapace-clip-v2';
 
 const ASSETS = [
   './',
