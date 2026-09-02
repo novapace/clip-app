@@ -1,0 +1,1300 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+<title>novapace</title>
+<style>
+  /* Palette built around the two logo colours: the teal of "pace" and the
+     green of "nova". Everything neutral is the same teal pushed down to near
+     black, so the page reads as one family instead of brand colours dropped
+     onto a blue-grey app.
+       --brand    rgb( 69,141,127)  as delivered, for fills and rules
+       --accent   the same teal two steps darker — white button labels need
+                  4.5:1 and the pure brand teal only reaches 4.0:1
+       --start    rgb(142,198,139)  as delivered, always with dark ink
+     Warning red and amber stay: they are the complement of this scheme, which
+     is exactly what an alarm colour should be. */
+  :root {
+    --brand: #458d7f; --brand-lt: #8ec68b;
+    --bg: #0d1614; --bar: #0b1312; --panel: #16221f; --grid: #27403a;
+    --fg: #e4eeea; --dim: #8fa8a0;
+    --h: #f0b357; --vib: #ef5350; --stop: #d3352f;
+    --accent: #3a7d70; --muted: #2c423b;
+    --start: rgb(142, 198, 139);
+    --score: #8ec68b;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg);
+               font-family: -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  /* The bar is the darkest surface on the page on purpose: the logo's own
+     colours have to carry themselves here, and the teal half is the weaker of
+     the two. On --bar it sits at ~4.8:1, on the lighter --panel it would drop
+     to ~4.2:1. The rule underneath runs teal→green, the logo's own gradient. */
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bar);
+           border-bottom: 2px solid;
+           border-image: linear-gradient(90deg, var(--brand), var(--brand-lt)) 1; }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; flex: 1; color: var(--brand-lt); }
+  /* The wordmark carries its own colours, so it gets breathing room rather
+     than a background plate. flex:1 lets it take the space the <h1> used to;
+     object-position keeps it left while the image itself stays inside its box
+     on narrow phones. */
+  header #logo { height: 26px; width: auto; max-width: 55%; flex: 1;
+                 object-fit: contain; object-position: left center; }
+  #status { font-size: 13px; color: var(--dim); }
+  #status.ok { color: var(--brand-lt); }
+  #status.bad { color: var(--vib); }
+  button { background: var(--accent); color: white; border: none; padding: 9px 16px; border-radius: 6px;
+           font-size: 14px; font-weight: 600; cursor: pointer; }
+  button:disabled { opacity: 0.4; cursor: default; }
+  button.secondary { background: var(--muted); }
+  main { padding: 8px; display: flex; flex-direction: column; gap: 8px; height: calc(100vh - 49px); overflow-y: auto; }
+
+  /* ---- Aktivitätsscore ---- */
+  .score { background: var(--panel); border-radius: 8px; padding: 14px 10px;
+           display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .score .lbl { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .ring { width: 148px; height: 148px; position: relative; }
+  .ring svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
+  .ring .track { fill: none; stroke: var(--grid); stroke-width: 12; }
+  .ring .arc   { fill: none; stroke: var(--score); stroke-width: 12; stroke-linecap: round;
+                 transition: stroke-dashoffset 0.3s ease; }
+  .ring .num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+               font-size: 34px; font-weight: 600; letter-spacing: -1px; }
+  .score .sub { font-size: 12px; color: var(--dim); text-align: center; }
+
+  /* ---- control panel ---- */
+  .ctl { background: var(--panel); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .clips { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .chip { display: flex; align-items: center; gap: 6px; background: #1c2b27; border: 1px solid var(--grid);
+          border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 13px; font-weight: 600; }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-lt); }
+  .chip.beat .dot { background: var(--vib); box-shadow: 0 0 8px var(--vib); }
+  .chip button { padding: 2px 8px; font-size: 12px; border-radius: 999px; background: var(--muted); }
+  .hint { font-size: 12px; color: var(--dim); }
+
+  /* Block banner. Hidden entirely while nothing is holding the vibration
+     back, so its presence alone is the signal — a permanently visible
+     "nichts geblockt" line would be read past within a minute. */
+  .block { display: none; white-space: pre-line; font-size: 13px; font-weight: 600;
+           color: var(--h); background: #2a2418; border: 1px solid #4a3d1c;
+           border-radius: 6px; padding: 8px 10px; }
+  .block.on { display: block; }
+
+  .modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .modes button { background: var(--muted); padding: 10px 4px; font-size: 13px; }
+  .modes button.active { background: var(--accent); }
+
+  .panel { display: none; flex-direction: column; gap: 10px; }
+  .panel.active { display: flex; }
+
+  .slider { display: flex; flex-direction: column; gap: 4px; }
+  .slider .head { display: flex; justify-content: space-between; font-size: 12px; color: var(--dim);
+                  text-transform: uppercase; letter-spacing: 0.5px; }
+  .slider .head b { color: var(--fg); font-size: 14px; }
+  /* The pure brand teal shows up here rather than on the buttons: a filled
+     track carries no label, so it has nothing to stay readable against. */
+  input[type=range] { width: 100%; accent-color: var(--brand); height: 28px; }
+
+  .btnrow { display: flex; gap: 8px; }
+  .btnrow button { flex: 1; }
+  .big { padding: 14px 8px; font-size: 15px; }
+  /* Dark ink on the light green: white on rgb(142,198,139) is barely
+     readable at this weight, and these are the two buttons a patient has
+     to hit without looking closely. Same reason for the deeper red on Stopp —
+     the bright --vib is the beat cue, where it is a flash and not a label;
+     under white text it only reaches 3.5:1. */
+  button.start { background: var(--start); color: #12240f; }
+  button.stop  { background: var(--stop); color: white; }
+
+  /* Test-phase section — see the comment above #advanced in the markup. */
+  details.adv { border-top: 1px solid var(--grid); padding-top: 8px; }
+  details.adv summary { font-size: 13px; color: var(--dim); cursor: pointer; padding: 4px 0;
+                        list-style: none; }
+  details.adv summary::-webkit-details-marker { display: none; }
+  details.adv summary::before { content: '▸ '; }
+  details.adv[open] summary::before { content: '▾ '; }
+  details.adv .body { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+</style>
+<!-- ─── Ergänzungen gegenüber tools/client_app.html im Firmware-Repo ───────────
+     Es sind genau zwei Blöcke: dieser hier und die Service-Worker-Registrierung
+     am Ende von <body>. Alles dazwischen ist unveränderte Kopie. Wer die App
+     drüben weiterentwickelt, kopiert die Datei erneut hierher und setzt die
+     beiden Blöcke wieder ein — mehr ist beim Abgleich nicht zu tun. -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b1312">
+<link rel="icon" href="icon-192.png" type="image/png">
+</head>
+<body>
+
+<header>
+  <!-- Logo file sits next to this page. If it is missing — someone copied the
+       HTML alone onto a phone — the header falls back to the plain word so the
+       bar never shows a broken-image box. The brand is lower-case "novapace",
+       so the fallback is too, sentence position notwithstanding. -->
+  <img id="logo" src="novapace_logo_horizontal_green_F1uoio.png" alt="novapace">
+  <h1 id="wordmark" hidden>novapace</h1>
+  <span id="status">getrennt</span>
+  <button id="connectBtn">Clip verbinden</button>
+</header>
+
+<main>
+
+  <div class="score">
+    <div class="lbl">Aktivitätsscore</div>
+    <div class="ring">
+      <svg viewBox="0 0 100 100">
+        <circle class="track" cx="50" cy="50" r="42"></circle>
+        <circle class="arc" id="scoreArc" cx="50" cy="50" r="42"></circle>
+      </svg>
+      <div class="num" id="scoreNum">0 %</div>
+    </div>
+  </div>
+
+  <div class="ctl">
+    <div class="clips" id="clips"><span class="hint">Kein Clip verbunden.</span></div>
+
+    <div class="modes">
+      <button data-mode="0" class="active">Feedbackmodus</button>
+      <button data-mode="1">Rhythmischer Modus</button>
+    </div>
+
+    <!-- Mode 0 — marker feedback -->
+    <div class="panel active" id="panel0">
+      <div class="slider">
+        <div class="head"><span>Vibrationsstärke</span><b id="int0Val">7</b></div>
+        <input type="range" class="intensity" min="1" max="10" step="1" value="7">
+      </div>
+      <div class="btnrow"><button id="feedbackBtn" class="big stop">Stopp</button></div>
+      <div class="btnrow">
+        <button class="big" data-pulse="L">Links</button>
+        <button class="big" data-pulse="both">Beidseitig</button>
+        <button class="big" data-pulse="R">Rechts</button>
+      </div>
+
+      <!-- TEST-PHASE SECTION — everything inside this <details> is meant for
+           the patient trials, not for the finished product. It is kept in one
+           collapsed block so the whole section can be deleted before rollout
+           without touching the rest of the panel. The three settings and the
+           block banner are the same ones the development app exposes. -->
+      <details class="adv" id="advanced">
+        <summary>Erweiterte Einstellungen</summary>
+        <div class="body">
+          <div class="slider">
+            <div class="head"><span>Marker-Schwelle</span><b id="cutoffVal">10</b></div>
+            <input type="range" id="cutoff" min="0" max="14" step="1" value="10">
+          </div>
+          <div class="slider">
+            <div class="head"><span>Schritt-Fenster</span><b id="markerWinVal">8 Schritte</b></div>
+            <input type="range" id="markerWin" min="2" max="8" step="1" value="8">
+          </div>
+          <div class="btnrow"><button id="refractoryBtn" class="big">Refraktärzeit 18 s: an</button></div>
+          <div class="block" id="blockBanner"></div>
+          <!-- Which side is timing the rhythm. The only way to see, without a
+               serial cable, whether a clip carries firmware that can do it. -->
+          <span class="hint" id="beatSource"></span>
+        </div>
+      </details>
+    </div>
+
+    <!-- Mode 1 — rhythmic cueing, timed by THIS device -->
+    <div class="panel" id="panel1">
+      <div class="slider">
+        <div class="head"><span>Frequenz (links + rechts)</span><b id="bpmVal">60 bpm</b></div>
+        <input type="range" id="bpm" min="20" max="240" step="1" value="60">
+      </div>
+      <div class="slider">
+        <div class="head"><span>Vibrationsstärke</span><b id="int1Val">7</b></div>
+        <input type="range" class="intensity" min="1" max="10" step="1" value="7">
+      </div>
+      <div class="btnrow"><button id="rhythmBtn" class="big start">Start</button></div>
+      <div class="btnrow">
+        <button class="big" data-pulse="L">Links</button>
+        <button class="big" data-pulse="both">Beidseitig</button>
+        <button class="big" data-pulse="R">Rechts</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+const SERVICE_UUID   = '4e7a5c00-0000-4e8a-a8d7-000000000001';
+const METRICS_UUID   = '4e7a5c00-0000-4e8a-a8d7-000000000002';
+const STATUS_UUID    = '4e7a5c00-0000-4e8a-a8d7-000000000003';
+const CONTROL_UUID   = '4e7a5c00-0000-4e8a-a8d7-000000000004';
+
+// Mirrors OpMode in src/config.h. The firmware still has four modes; the
+// UI exposes two of them (Feedback, Rhythmus) and uses the other two as
+// implementation detail — see activeFirmwareMode().
+const MODE = { FEEDBACK: 0, RHYTHMIC: 1, MANUAL: 2, OFF: 3 };
+
+const state = {
+  clips: [],          // {device, side, metricsChar, ctrlChar, lastSeq, cutoff, block, pulsePending, ownBeat}
+  mode: MODE.FEEDBACK,
+  // Feedback runs from the moment the app opens, matching the clip, which
+  // always powers on in Feedback (mode is deliberately not persisted).
+  feedbackOn: true,
+  // Settings mirrored across all connected clips. Seeded from the first
+  // clip's own persisted values when it connects (see hydrate()).
+  cutoff: 10,
+  window: 8,
+  refractory: 1,
+  intensity: 7,
+  bpm: 60,
+  // Rhythm scheduler. `beat` is the absolute slot counter; its parity is
+  // the side, so it also carries the L/R alternation.
+  rhythmOn: false,
+  beat: 0,
+  anchor: 0,
+  timer: null,
+  resync: null,       // interval pulling the clips' phase back onto the anchor
+};
+
+const $ = id => document.getElementById(id);
+const setStatus = (msg, cls) => { const e = $('status'); e.textContent = msg; e.className = cls || ''; };
+
+// The line the header settles back to whenever nothing else is happening.
+const renderConnStatus = () => state.clips.length
+  ? setStatus(`verbunden: ${state.clips.map(c => c.side).sort().join(' + ')}`, 'ok')
+  : setStatus('getrennt');
+
+// requestDevice() rejects with a DOMException whose message is English and
+// written for developers ("User cancelled the requestDevice() chooser."). The
+// patient sees the header, so translate the three that actually occur and let
+// anything else through verbatim — an unknown fault is worth reading raw.
+//   NotFoundError   chooser dismissed, including "nothing was listed, so I
+//                   closed it" — the same name covers both, hence the hint
+//   NotAllowedError Bluetooth blocked for this page
+//   SecurityError   page is not a secure context
+function bleErrorText(e) {
+  switch (e.name) {
+    case 'NotFoundError':
+      return ['Kein Clip ausgewählt. Stand keiner in der Liste: Clip einschalten, '
+              + 'rund 20 s warten und noch einmal auf „Clip verbinden“ tippen.', ''];
+    case 'NotAllowedError':
+      return ['Bluetooth ist für diese Seite gesperrt — in den Browser-Einstellungen '
+              + 'freigeben.', 'bad'];
+    case 'SecurityError':
+      return ['Bluetooth braucht eine sichere Seite (https:// oder file://).', 'bad'];
+    default:
+      return ['Fehler: ' + e.message, 'bad'];
+  }
+}
+const clipBySide = s => state.clips.find(c => c.side === s);
+
+// Sliders fire continuously while dragging. Coalesce so one gesture is a
+// couple of writes rather than fifty; the firmware additionally debounces
+// its flash write by CONFIG_WRITE_DEBOUNCE_MS.
+function debounce(fn, ms) {
+  let t = null;
+  return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); };
+}
+
+// ---- Aktivitätsscore -------------------------------------------------
+//
+// The clip keeps no daily totals — it reports one step at a time and
+// forgets it. So the distance is accumulated here, out of the step
+// notifications, and kept in localStorage so it survives a reload, a
+// disconnect and the night.
+//
+// What is accumulated is not the walked distance but the EFFECTIVE
+// distance: every step contributes its length divided by that step's marker
+// count (floored at 1, so a clean step counts in full).
+//
+//   1.60 m at 8 marker points → 0.20 m
+//   1.60 m at 2 marker points → 0.80 m
+//
+// The marker count is the number of down-ticks the clip saw in its sliding
+// window, i.e. how much the gait deteriorated — so dividing by it makes the
+// score reward walking WELL, not merely walking far. A patient who shuffles
+// through a bad day cannot out-walk their own quality, and today's number is
+// comparable with the same measure over the past days.
+//
+// NOTE localStorage is scoped to the ORIGIN. History collected under
+// file:///…/client_app.html is invisible under http://localhost:8000/, so
+// a test series has to stay on one way of opening the page.
+
+const STORE_KEY   = 'novapace.activity';
+const STORE_VER   = 2;     // 2 = effective metres; 1 stored raw distance
+const REF_DAYS    = 30;    // days that count towards the reference distance
+const REF_DEFAULT = 200;   // effective metres, until the patient has history
+const KEEP_DAYS   = 400;   // history older than this is dropped on load
+
+// Local date, not UTC: the day has to roll over at the patient's midnight.
+function dayKey(d = new Date()) {
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+// { v: 2, days: { 'YYYY-MM-DD': { L: effective metres, R: … } } }
+let activity = { v: STORE_VER, days: {} };
+let today = dayKey();
+
+function loadActivity() {
+  try {
+    const raw = localStorage.getItem(STORE_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    if (parsed && parsed.days && typeof parsed.days === 'object') {
+      if (parsed.v === STORE_VER) {
+        activity = { v: STORE_VER, days: parsed.days };
+      } else {
+        // Days written before the switch hold RAW metres and are several times
+        // larger than the effective metres kept now. Averaging the two units
+        // together would put the reference far above anything today can reach,
+        // so that history is discarded and the score starts from the default.
+        activity = { v: STORE_VER, days: {} };
+        console.warn('[activity] history was recorded in raw metres and has '
+                   + 'been discarded; the score starts fresh.');
+      }
+    }
+  } catch (e) {
+    console.warn('[activity] unreadable store, starting empty:', e.message);
+  }
+  // Drop ancient entries so the store cannot grow without bound.
+  const cutoff = dayKey(new Date(Date.now() - KEEP_DAYS * 86400000));
+  for (const k of Object.keys(activity.days)) if (k < cutoff) delete activity.days[k];
+  today = dayKey();
+}
+
+// Written on a delay: a brisk walk is a few steps per second, and every one
+// of them would otherwise be a synchronous localStorage write.
+const saveActivity = debounce(() => {
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(activity));
+  } catch (e) {
+    console.warn('[activity] store write failed:', e.message);
+  }
+}, 2000);
+
+// Effective metres of one step: its length, divided by the marker count the
+// clip reported for it. The floor of 1 covers both a clean step (0 points)
+// and a barely-flagged one (1 point) — neither is penalised.
+function effectiveMetres(step) {
+  return (step.len / 100) / Math.max(1, step.marker);
+}
+
+// Effective metres on one day. A side that contributed nothing is left out of
+// the mean rather than counted as zero — with only the right clip connected
+// the score must reflect that side's effective distance, not half of it. Both
+// sides present: half of each, i.e. their mean, since each foot's steps
+// already span the whole walk.
+function dayDistance(entry) {
+  if (!entry) return 0;
+  const sides = ['L', 'R'].map(s => entry[s] || 0).filter(v => v > 0);
+  if (!sides.length) return 0;
+  return sides.reduce((a, b) => a + b, 0) / sides.length;
+}
+
+// Mean effective distance over the last REF_DAYS days that actually saw
+// activity, today excluded. Days without any recorded steps are skipped
+// entirely instead of pulling the mean down — a fortnight without the clip
+// must not make the next walk look like a record. Neither this figure nor
+// the day's distance is shown: the patient sees one number, the percentage.
+function referenceDistance() {
+  const past = Object.keys(activity.days)
+    .filter(k => k < today)
+    .sort()
+    .reverse()
+    .map(k => dayDistance(activity.days[k]))
+    .filter(d => d > 0)
+    .slice(0, REF_DAYS);
+  if (!past.length) return REF_DEFAULT;
+  return past.reduce((a, b) => a + b, 0) / past.length;
+}
+
+// Called before every read and write of today's entry, and once a minute, so
+// a session that runs past midnight starts a fresh day instead of piling the
+// morning onto yesterday.
+function rollOverDay() {
+  const now = dayKey();
+  if (now === today) return false;
+  today = now;
+  return true;
+}
+
+function addDistance(side, metres) {
+  rollOverDay();
+  const e = activity.days[today] || (activity.days[today] = { L: 0, R: 0 });
+  e[side] = (e[side] || 0) + metres;
+  saveActivity();
+}
+
+const ARC_LEN = 2 * Math.PI * 42;  // r=42 in the SVG viewBox
+
+function renderScore() {
+  const walked = dayDistance(activity.days[today]);
+  const ref = referenceDistance();
+  const pct = ref > 0 ? (walked / ref) * 100 : 0;
+
+  // The number is not clamped — 120 % is a good day and should say so — but
+  // the ring has nowhere to go past full.
+  $('scoreNum').textContent = Math.round(pct) + ' %';
+  const arc = $('scoreArc');
+  arc.style.strokeDasharray = ARC_LEN;
+  arc.style.strokeDashoffset = ARC_LEN * (1 - Math.min(1, Math.max(0, pct / 100)));
+}
+
+// ---- BLE -----------------------------------------------------------
+
+// Both Write and WriteWithoutResponse are advertised by the control
+// characteristic. Prefer the latter — it skips the ATT round-trip. Some
+// stacks only expose one, so fall back.
+//
+// `ack` forces the acknowledged form. The phase sync uses it, not for the
+// delivery guarantee but for the clock: the promise then settles on the
+// clip's ATT response, so the time around the call is a real round trip and
+// the frame can say how long it expects to be under way.
+async function sendCmd(clip, cmd, ack) {
+  if (!clip?.ctrlChar) return;
+  const data = new TextEncoder().encode(cmd);
+  try {
+    if (!ack && clip.ctrlChar.properties.writeWithoutResponse) {
+      await clip.ctrlChar.writeValueWithoutResponse(data);
+    } else {
+      await clip.ctrlChar.writeValue(data);
+    }
+  } catch (e) {
+    console.warn('[ble write]', clip.side, cmd, e.message);
+  }
+}
+
+const broadcast = cmd => Promise.all(state.clips.map(c => sendCmd(c, cmd)));
+
+// "SR M0 C10 V07 B060 W8 R1 G1" — fixed offsets, see src/comms/ble.h.
+//
+// The trailing fields were appended after clips had already been flashed, so
+// a status that stops short is an older firmware, not a corrupt read: fall
+// back to the defaults for what is missing rather than failing the whole
+// parse and silently skipping hydration. The R field matters twice over —
+// at 24 bytes the value no longer fits one read response at the default ATT
+// MTU, so a client that does not follow up with a read-blob would also land
+// here, and "assume the gap is enforced" is the safe reading either way.
+function parseStatus(s) {
+  if (s.length < 18 || s[0] !== 'S') return null;
+  const st = {
+    side:       s[1],
+    mode:       parseInt(s[4], 10),
+    cutoff:     parseInt(s.substring(7, 9), 10),
+    intensity:  parseInt(s.substring(11, 13), 10),
+    bpm:        parseInt(s.substring(15, 18), 10),
+    window:     s.length >= 21 ? parseInt(s[20], 10) : 8,
+    refractory: s.length >= 24 ? (s[23] === '1' ? 1 : 0) : 1,
+    // Capability flag, not a setting: '1' means the clip can time the
+    // rhythm itself. Absent on clips flashed before that existed, and the
+    // default of 0 is what puts the app back on one write per beat.
+    ownBeat:    s.length >= 27 ? (s[26] === '1' ? 1 : 0) : 0,
+  };
+  return Object.values(st).some(v => typeof v === 'number' && Number.isNaN(v)) ? null : st;
+}
+
+async function readStatus(clip) {
+  try {
+    const v = await clip.ctrlChar.readValue();
+    return parseStatus(new TextDecoder().decode(v));
+  } catch (e) {
+    console.warn('[ble read status]', e.message);
+    return null;
+  }
+}
+
+async function connect() {
+  if (!navigator.bluetooth) {
+    setStatus('Web Bluetooth nicht verfügbar (Chrome benutzen)', 'bad');
+    return;
+  }
+  try {
+    setStatus('suche Clip…');
+    const device = await navigator.bluetooth.requestDevice({
+      filters: [{ namePrefix: 'novapace-' }],
+      optionalServices: [SERVICE_UUID],
+    });
+    if (state.clips.some(c => c.device.id === device.id)) {
+      setStatus('Clip ist bereits verbunden', 'bad');
+      return;
+    }
+    setStatus(`verbinde mit ${device.name}…`);
+    const server  = await device.gatt.connect();
+    const service = await server.getPrimaryService(SERVICE_UUID);
+
+    const clip = {
+      device,
+      side: device.name?.endsWith('-L') ? 'L' : 'R',
+      metricsChar: await service.getCharacteristic(METRICS_UUID),
+      ctrlChar:    await service.getCharacteristic(CONTROL_UUID),
+      lastSeq: -1, cutoff: state.cutoff, block: null, pulsePending: false,
+      ownBeat: false,   // set from the status read in hydrate()
+      lagMs: null,      // measured one-way trip for a control write
+    };
+
+    await clip.metricsChar.startNotifications();
+    clip.metricsChar.addEventListener('characteristicvaluechanged',
+                                     ev => onMetrics(clip, ev));
+
+    // The status characteristic carries the block state AND doubles as the
+    // keep-alive: the clip re-sends it every BLE_HEARTBEAT_MS to hold the
+    // link out of Android's idle throttle, and an unsubscribed
+    // characteristic transmits nothing at all — without this subscription
+    // the rhythmic beats visibly lag. Older firmware sends a copy of the
+    // last step here instead; parseBlock() rejects that frame, so the
+    // banner simply stays empty rather than showing nonsense.
+    try {
+      const st = await service.getCharacteristic(STATUS_UUID);
+      await st.startNotifications();
+      st.addEventListener('characteristicvaluechanged', ev => onStatus(clip, ev));
+    } catch (e) {
+      console.warn('[ble] status characteristic unavailable:', e.message);
+    }
+
+    device.addEventListener('gattserverdisconnected', () => onDisconnected(clip));
+    state.clips.push(clip);
+
+    await hydrate(clip);
+    renderClips();
+    renderConnStatus();
+  } catch (e) {
+    const [msg, cls] = bleErrorText(e);
+    // A dismissed chooser is not a failure — say what to do and put the
+    // header back on the line it had, instead of leaving "suche Clip…" up.
+    if (!cls && state.clips.length) { renderConnStatus(); return; }
+    setStatus(msg, cls);
+  }
+}
+
+// First clip to connect defines the working values (it has whatever the
+// user last saved to its flash). Every later clip is pushed to match, so
+// both feet always cue identically.
+async function hydrate(clip) {
+  const st = await readStatus(clip);
+  clip.ownBeat = st?.ownBeat === 1;
+  if (st && state.clips.length === 1) {
+    state.cutoff     = st.cutoff;
+    state.window     = st.window;
+    state.refractory = st.refractory;
+    state.intensity  = st.intensity;
+    state.bpm        = st.bpm;
+    syncUiFromState();
+  }
+  clip.cutoff = state.cutoff;
+  await pushSettings(clip);
+  // st.mode is deliberately ignored: a clip always powers on in Feedback
+  // and reverts on disconnect, so the app's own state is authoritative —
+  // a clip joining a stopped session must be stopped too.
+  await sendCmd(clip, 'M' + activeFirmwareMode());
+
+  if (state.rhythmOn && state.mode === MODE.RHYTHMIC) {
+    // Drop the newcomer into the beat at the next slot for its side, so it
+    // falls in step with the clip already cueing instead of starting a
+    // rhythm of its own. If the newcomer is old firmware, clipTimedBeat()
+    // has just gone false and the whole run falls back to one write per
+    // beat — the "GX" is what stops the other clip's own timer, which would
+    // otherwise cue on top of those writes.
+    if (clipTimedBeat()) { await probeLag(clip); await armClipBeat(clip, false); }
+    else await broadcast('GX');
+  }
+}
+
+async function pushSettings(clip) {
+  await sendCmd(clip, 'W' + state.window);
+  await sendCmd(clip, 'R' + state.refractory);
+  await sendCmd(clip, 'C' + String(state.cutoff).padStart(2, '0'));
+  await sendCmd(clip, 'V' + String(state.intensity).padStart(2, '0'));
+  await sendCmd(clip, 'B' + String(state.bpm).padStart(3, '0'));
+}
+
+function onDisconnected(clip) {
+  state.clips = state.clips.filter(c => c !== clip);
+  if (!state.clips.length) stopRhythm();
+  renderConnStatus();
+  renderClips();
+  renderBlock();
+}
+
+function disconnectClip(clip) {
+  if (clip.device.gatt.connected) clip.device.gatt.disconnect();
+  else onDisconnected(clip);
+}
+
+// Format: "L087H-12F008M06V1N07" — 20 chars, fixed-offset ASCII.
+// N is a 0..99 step sequence counter; heartbeat re-sends repeat the
+// previous step's N so we can deduplicate them.
+function parseStep(s) {
+  if (s.length < 20 || s[0] !== 'L') return null;
+  const len = parseInt(s.substring(1, 4), 10);
+  const h   = parseInt(s.substring(5, 8), 10);  // sign included at idx 5
+  const flex = parseInt(s.substring(9, 12), 10);
+  const marker = parseInt(s.substring(13, 15), 10);
+  const vib = s.charCodeAt(16) === 49 /* '1' */;
+  const seq = parseInt(s.substring(18, 20), 10);
+  if (Number.isNaN(len) || Number.isNaN(h) || Number.isNaN(flex)
+      || Number.isNaN(marker) || Number.isNaN(seq)) return null;
+  return { len, h, flex, marker, vib, seq, t: Date.now() };
+}
+
+// Bit values from SuppressReason in src/gait/marker.h. The clip reports a
+// mask, not a single reason, because several heuristics can fire on one
+// step — a downstairs step that is also a curve, say. The two Schwankung
+// entries are the same 20-%-collapse test run on the two channels the
+// marker logic compares, so they routinely appear together.
+const BLOCK_REASONS = [
+  [0x01, 'Schwankung Schrittlänge'],
+  [0x02, 'Treppe runter'],
+  [0x04, 'Treppe hoch'],
+  [0x08, 'Refraktärzeit'],
+  [0x10, 'Kurvenlaufen'],
+  [0x20, 'Ausreißer-Schritt'],
+  [0x40, 'Schwankung Kontaktwinkel'],
+];
+
+// "HS10 A10 N4" — 11 chars, fixed-offset ASCII, see src/comms/ble.h.
+//   S = heuristics that fired on the last step
+//   A = the reason still holding the block, 00 if none
+//   N = steps that block has left to run
+function parseBlock(s) {
+  if (s.length < 11 || s[0] !== 'H') return null;
+  const fired  = parseInt(s.substring(2, 4), 16);
+  const active = parseInt(s.substring(6, 8), 16);
+  const steps  = parseInt(s[10], 10);
+  if (Number.isNaN(fired) || Number.isNaN(active) || Number.isNaN(steps)) return null;
+  return { fired, active, steps };
+}
+
+// Both masks, not just the active one. Only ONE reason can own the
+// countdown — the two Schwankung tests share a suppression length, so
+// whichever is checked first wins the max in marker.cpp's bump() and the
+// other would silently vanish from the banner even though it fired on this
+// very step. The refractory bit needs the fired mask for a different
+// reason: it is timed (VIBRATION_REFRACTORY_MS) rather than counted in
+// steps, so it never appears in "active" at all. On the steps that merely
+// sit inside a running countdown the fired mask is zero, so only the owner
+// is named.
+function blockText(b) {
+  if (!b) return '';
+  const mask = b.active | b.fired;
+  const names = BLOCK_REASONS.filter(([bit]) => mask & bit).map(([, n]) => n);
+  if (!names.length) return '';
+  const tail = b.steps > 0
+    ? ` + ${b.steps} ${b.steps === 1 ? 'Schritt' : 'Schritte'}`
+    : '';
+  return `Vibration geblockt (${names.join(', ')}${tail})`;
+}
+
+// Called ~10× per second per clip, so it writes to the DOM only when the
+// text actually changed — otherwise a text node is replaced on every
+// heartbeat for as long as the page is open.
+let lastBlockRender = null;
+function renderBlock() {
+  const multi = state.clips.length > 1;
+  const text = [...state.clips]
+    .sort((a, b) => a.side.localeCompare(b.side))
+    .map(c => [c, blockText(c.block)])
+    .filter(([, t]) => t)
+    .map(([c, t]) => (multi ? `${c.side === 'L' ? 'Links' : 'Rechts'}: ` : '') + t)
+    .join('\n');
+  if (text === lastBlockRender) return;
+  lastBlockRender = text;
+  const el = $('blockBanner');
+  el.textContent = text;
+  el.classList.toggle('on', text !== '');
+}
+
+function onStatus(clip, ev) {
+  const b = parseBlock(new TextDecoder().decode(ev.target.value));
+  if (!b) return;
+  clip.block = b;
+  renderBlock();
+}
+
+function onMetrics(clip, ev) {
+  const dec = new TextDecoder().decode(ev.target.value);
+  const step = parseStep(dec);
+  if (!step) {
+    console.warn('[ble notify] parseStep returned null for:', JSON.stringify(dec));
+    return;
+  }
+  // Heartbeat re-send of the same step — keeps the BLE connection
+  // out of Android's idle throttle but must not be counted twice into
+  // the day's distance.
+  if (step.seq === clip.lastSeq) return;
+  clip.lastSeq = step.seq;
+  addDistance(clip.side, effectiveMetres(step));
+  renderScore();
+}
+
+// ---- Mode & settings ------------------------------------------------
+
+// Which firmware mode the clips should currently be in.
+//
+// "Feedback gestoppt" is sent as the firmware's Manual mode rather than
+// its Off mode, and the difference matters: Off makes the firmware reject
+// a "P" outright ([ble.cpp] case 'P'), which would leave the three manual
+// buttons dead exactly when the user has stopped the automatic feedback
+// and is most likely to reach for them. Manual suppresses only the
+// marker-driven pulse — step detection and the metrics notifications keep
+// running (so the Aktivitätsscore keeps counting), and a hand-triggered
+// pulse still fires.
+function activeFirmwareMode() {
+  if (state.mode === MODE.RHYTHMIC) return MODE.RHYTHMIC;
+  return state.feedbackOn ? MODE.FEEDBACK : MODE.MANUAL;
+}
+
+const pushMode = () => broadcast('M' + activeFirmwareMode());
+
+// Switching mode carries the running state across, so tapping the other
+// mode's button starts it — a patient who is being cued and wants the other
+// kind of cue should not have to find a second button to get it going
+// again. The reverse holds too: switch away from a mode that was stopped
+// and the new one comes up stopped.
+async function setMode(mode) {
+  if (mode === state.mode) return;
+  const running = state.mode === MODE.RHYTHMIC ? state.rhythmOn : state.feedbackOn;
+
+  // Always kill the beat timer first: it must not survive into Feedback,
+  // and startRhythm() below re-anchors it from now in any case.
+  stopRhythm();
+  state.mode = mode;
+  if (mode === MODE.FEEDBACK) state.feedbackOn = running;
+  renderFeedbackBtn();
+
+  document.querySelectorAll('.modes button').forEach(b =>
+    b.classList.toggle('active', +b.dataset.mode === mode));
+  document.querySelectorAll('.panel').forEach(p =>
+    p.classList.toggle('active', p.id === 'panel' + mode));
+
+  // Mode before beats — the clip must already be in Rhythmic when the
+  // first "P" lands, or it would be answered as a Feedback-mode manual
+  // pulse.
+  await pushMode();
+  if (mode === MODE.RHYTHMIC && running) startRhythm();
+}
+
+// The Feedback panel's Start/Stopp. Purely a mode switch — unlike the
+// rhythm button there is no timer on this side, the clip does its own
+// marker timing.
+function renderFeedbackBtn() {
+  const b = $('feedbackBtn');
+  b.textContent = state.feedbackOn ? 'Stopp' : 'Start';
+  b.classList.toggle('stop',  state.feedbackOn);
+  b.classList.toggle('start', !state.feedbackOn);
+}
+
+// The 18 s is VIBRATION_REFRACTORY_MS in src/config.h. Only the switch is
+// settable over BLE — a minimum gap between cues is a therapeutic decision,
+// not a slider — so the number is spelled out here rather than read back
+// from the clip. Off, the clip fires on every step that reaches the
+// threshold, which is a testing configuration and not a patient setting.
+function renderRefractoryBtn() {
+  const b = $('refractoryBtn');
+  b.textContent = 'Refraktärzeit 18 s: ' + (state.refractory ? 'an' : 'aus');
+  b.classList.toggle('secondary', !state.refractory);
+}
+
+async function setFeedbackOn(on) {
+  state.feedbackOn = on;
+  renderFeedbackBtn();
+  await pushMode();
+}
+
+const pushCutoff    = debounce(v => broadcast('C' + String(v).padStart(2, '0')), 150);
+const pushWindow    = debounce(v => broadcast('W' + v), 150);
+const pushIntensity = debounce(v => broadcast('V' + String(v).padStart(2, '0')), 150);
+// Tempo, then phase. "B" alone updates the clip's stored bpm but does not
+// re-arm a beat that is already running (see ble.h), so the restart happens
+// here — after the new tempo is in place, and once per gesture rather than
+// once per slider step.
+const pushBpm       = debounce(async v => {
+  await broadcast('B' + String(v).padStart(3, '0'));
+  await armBeat();
+}, 150);
+
+// n steps in the window give n-1 comparison pairs on two channels, so the
+// highest marker count the clip can ever report is 2*(n-1). Without pulling
+// the cutoff slider down with the window, a 5-step window would still offer
+// thresholds up to 14 — settings at which the clip can never fire, and no
+// visible reason why. Clamps state.cutoff to the new ceiling; the caller
+// pushes it if it moved.
+function applyWindowBounds() {
+  const max = 2 * (state.window - 1);
+  $('cutoff').max = max;
+  if (state.cutoff > max) state.cutoff = max;
+  return max;
+}
+
+// Keep every intensity slider (one per mode panel) showing the same value.
+function syncUiFromState() {
+  applyWindowBounds();
+  renderRefractoryBtn();
+  $('markerWin').value = state.window;
+  $('markerWinVal').textContent = state.window + ' Schritte';
+  $('cutoff').value = state.cutoff;
+  $('cutoffVal').textContent = state.cutoff;
+  $('bpm').value = state.bpm;
+  $('bpmVal').textContent = state.bpm + ' bpm';
+  document.querySelectorAll('.intensity').forEach(el => { el.value = state.intensity; });
+  ['int0Val', 'int1Val'].forEach(id => { $(id).textContent = state.intensity; });
+  state.clips.forEach(c => { c.cutoff = state.cutoff; });
+}
+
+// ---- Rhythmic scheduler ----------------------------------------------
+//
+// The CLIP times the beat, off its own microsecond ticker; this app only
+// sets the tempo ("B") and the starting phase ("G"), and then runs the
+// same clock locally to drive the lamps.
+//
+// It used to send one "P" per beat. That put every single cue at the mercy
+// of the radio — and on hardware at 60 bpm roughly one beat in ten arrived
+// late enough to feel wrong while this app's own clock stayed perfectly
+// steady, which is the signature of transit jitter and not of scheduling.
+// No amount of work on this side could have fixed it: the last write of a
+// beat leaves here on time and still lands when the link lets it. See
+// src/hardware/vibration.h for the firmware end.
+//
+// The per-beat path below is kept for clips flashed before the "G" command
+// existed — parseStatus() detects them by the missing G field.
+//
+// Each beat's due time is derived from a fixed anchor rather than by
+// adding an interval to "now" — setInterval and naive setTimeout chains
+// accumulate the browser's timer slop, which over a few minutes drifts
+// audibly against the patient's cadence.
+//
+// bpm counts left + right together, so consecutive beats alternate sides
+// and one side is cued every 2 × (60000/bpm) ms. A side that is not
+// connected simply has its beat skipped, which keeps the tempo the patient
+// walks to correct instead of doubling the present side's rate.
+
+function beatInterval() { return 60000 / state.bpm; }
+
+// True while every connected clip can time the beat itself. Deliberately
+// all-or-nothing: with one new and one old clip, half the beats would come
+// off a timer and half off the radio, and the two feet would not agree.
+const clipTimedBeat = () => state.clips.length > 0 && state.clips.every(c => c.ownBeat);
+
+// How far ahead of the first beat the "G" frame is sent. It has to cover
+// the write's trip through the browser, the OS stack and the connection
+// interval — the very latency this design stops caring about for every
+// LATER beat. Generous on purpose: it is paid once per start, and being
+// early only means the clip waits.
+const BEAT_LEAD_MS = 600;
+
+// The start is the run's ONLY hard phase set, and the phase it leaves
+// behind is only as good as its own frame's trip: everything after it moves
+// 25 ms at a time, so a start that lands 300 ms out stays visibly out for a
+// minute or two. So the start frame is repeated until one of them was
+// itself a fast trip — at most BEAT_START_TRIES times, since a link that
+// slow will not be cueing anyone well either way.
+const BEAT_START_RETRY_MS = 40;
+const BEAT_START_TRIES    = 4;
+
+// How often the clips' phase is pulled back onto this app's anchor.
+//
+// Their clocks are not this one and not each other's, and the error that
+// matters is between the two FEET: once they are half a beat apart they
+// have swapped. The firmware applies only half of each reported error and
+// caps a correction at 25 ms, so the interval is what sets how much clock
+// error the loop can actually track — 25 ms per 4 s is ~6000 ppm, against
+// the ≤250 ppm the beat's clock source is good for. Two 6-byte writes every
+// four seconds is still less traffic than the one-write-per-beat design
+// this replaced.
+const BEAT_RESYNC_MS = 4000;
+
+// Tell one clip when its next beat is due, as a delay from now.
+//
+// The firmware adds one beat interval for the right foot itself (see
+// ble.h), so the delay handed to a right clip is for the slot BEFORE the
+// one it will actually play — which is why the two clips get an identical
+// frame at start, and why the phase between the feet only carries the gap
+// between the two writes leaving here rather than each write's own trip.
+//
+// `sync` sends the slew-limited form: the clip keeps its own schedule and
+// is pulled towards this one by at most a few milliseconds. Which upcoming
+// slot is named does not matter there — the firmware compares phase modulo
+// the period — but it is computed the same way so the two paths cannot
+// drift apart in their arithmetic.
+function beatFrame(clip, sync) {
+  const iv    = beatInterval();
+  const own   = clip.side === 'R' ? iv : 0;
+  const now   = performance.now();
+  // The earliest slot this clip could still play, given the lead time.
+  const first = now + BEAT_LEAD_MS + own;
+  let k = Math.ceil((first - state.anchor) / iv);
+  if (k < 0) k = 0;
+  // Even slots are left, odd are right.
+  if (k % 2 !== (clip.side === 'R' ? 1 : 0)) k++;
+  // Take the frame's own trip out of the number. Without this the clip is
+  // told "beat in n ms" and starts counting n ms LATE by exactly the
+  // latency — a one-directional bias, so the sync would faithfully hold the
+  // clip at it instead of correcting it away.
+  const delay = Math.min(9999, Math.max(0, Math.round(state.anchor + k * iv - now - own - (clip.lagMs || 0))));
+  return (sync ? 'GS' : 'G') + String(delay).padStart(4, '0');
+}
+
+async function armClipBeat(clip, sync) {
+  if (sync) return timedWrite(clip, beatFrame(clip, true));
+  // Hard set, repeated until one of the frames was itself a fast trip. Each
+  // is recomputed from the anchor, so a retry simply names whatever slot is
+  // still far enough out — and lands on the same grid as the other foot.
+  for (let i = 0; i < BEAT_START_TRIES; i++) {
+    const half = await timedWrite(clip, beatFrame(clip, false));
+    if (half - (clip.lagMs || 0) <= BEAT_START_RETRY_MS) return;
+  }
+}
+
+// One acknowledged write, timed, feeding the clip's latency estimate.
+// Returns this trip's own half-RTT, which is not the same as the estimate:
+// the estimate deliberately ignores a slow sample, and the caller sometimes
+// needs to know that the sample WAS slow.
+//
+// The estimate is a LEAKY MINIMUM: the shortest round trip seen is the one
+// that queued the least and so is the closest to the true one-way delay —
+// the filter every clock-sync protocol uses, and the reason an occasional
+// 300 ms outlier does not drag the estimate with it. The slow leak lets it
+// climb again if the link really has become slower.
+async function timedWrite(clip, cmd) {
+  const t0 = performance.now();
+  await sendCmd(clip, cmd, true);
+  const half = (performance.now() - t0) / 2;
+  clip.lagMs = clip.lagMs == null ? half : Math.min(half, clip.lagMs * 1.05 + 1);
+  return half;
+}
+
+// Seed that estimate before the first frame of a run. The start is a HARD
+// phase set, so a slow one leaves the two feet apart and the slew needs
+// minutes to creep them back together at 25 ms a time — the one place where
+// a single late packet still has lasting consequences. "B" is idempotent
+// and already part of the protocol, so it doubles as the probe; twice,
+// because a single sample could itself be the outlier.
+async function probeLag(clip) {
+  const cmd = 'B' + String(state.bpm).padStart(3, '0');
+  await timedWrite(clip, cmd);
+  await timedWrite(clip, cmd);
+}
+
+// (Re-)start the clips' own beat against the current anchor. No-op on the
+// fallback path, where rhythmTick() sends the beats instead.
+//
+// Both clips are probed together and then armed together, so they measure
+// the same stretch of link and land on the same slot.
+//
+// `fresh` marks the start of a run, where the anchor is moved to AFTER the
+// probing. Anchored before it, slot 0 has already come and nearly gone by
+// the time the frames go out, so the arithmetic skips a whole cycle and the
+// patient waits two and a half seconds at 60 bpm for a beat they asked for.
+async function armBeat(fresh) {
+  if (!state.rhythmOn || !clipTimedBeat()) return;
+  await Promise.all(state.clips.map(probeLag));
+  if (fresh && state.rhythmOn) {
+    state.beat   = 0;
+    state.anchor = performance.now() + BEAT_LEAD_MS;
+    clearTimeout(state.timer);
+    state.timer = setTimeout(rhythmTick, BEAT_LEAD_MS);
+  }
+  await Promise.all(state.clips.map(c => armClipBeat(c, false)));
+}
+
+// The drift correction. Deliberately driven by its own interval rather than
+// off rhythmTick(): it must keep running at the same rate whatever the
+// tempo, and it must not be skipped when a browser stall eats a beat.
+function startResync() {
+  clearInterval(state.resync);
+  state.resync = setInterval(() => {
+    if (!state.rhythmOn || !clipTimedBeat()) return;
+    state.clips.forEach(c => armClipBeat(c, true));
+  }, BEAT_RESYNC_MS);
+}
+
+function stopResync() {
+  clearInterval(state.resync);
+  state.resync = null;
+}
+
+function flashBeat(side) {
+  const el = document.querySelector(`.chip[data-side="${side}"]`);
+  if (!el) return;
+  el.classList.add('beat');
+  setTimeout(() => el.classList.remove('beat'), 120);
+}
+
+// One outstanding beat write per clip. Fallback path only — a clip that
+// times its own beat is never sent a "P".
+//
+// Chrome serialises GATT operations per device: a "P" issued while the
+// previous one is still in flight does not overtake it, it queues behind
+// it, and both leave the moment the queue drains — two buzzes a few
+// milliseconds apart. Worse, the firmware merges pulses that overlap by
+// EXTENDING them (see vibration.h), so the pair can also arrive as one
+// long buzz. Dropping the beat instead leaves a silent slot, which is the
+// better failure: a cue that comes late is a wrong cue, a cue that is
+// missing is merely absent.
+//
+// The lamp follows what was actually sent, not what was scheduled, so a
+// stuttering chip is the visible symptom of a congested link.
+function pulseBeat(clip) {
+  if (clip.pulsePending) return false;
+  clip.pulsePending = true;
+  // sendCmd swallows its own errors, so this settles either way.
+  sendCmd(clip, 'P').finally(() => { clip.pulsePending = false; });
+  return true;
+}
+
+// Beat slots are absolute: slot k is due at anchor + k × interval, and
+// slot parity decides the side (even = L). Deriving them from the anchor
+// rather than from "now + interval" keeps timer slop from accumulating.
+//
+// Slots whose moment has already passed are SKIPPED, not replayed. The
+// previous version advanced one slot per tick, so after any stall — a GC
+// pause, a background throttle, the phone dimming — every missed slot was
+// still fired, back to back at zero delay, before the schedule caught up.
+// That is the burst of vibrations that follows a late one. The clock stays
+// anchored through the skip, so the tempo the patient walks to is
+// unchanged; only the missed cues are gone.
+// How late a slot may be and still be worth cueing, as a fraction of the
+// interval. Ordinary timer jitter is a millisecond or two and must still
+// fire; a slot held up by a stall is past being a cue for the step it was
+// meant to guide, and firing it only tells the patient to hurry.
+const BEAT_LATE_TOLERANCE = 0.2;
+
+function rhythmTick() {
+  if (!state.rhythmOn) return;
+  const iv = beatInterval();
+  const now = performance.now();
+  const due = state.anchor + state.beat * iv;
+
+  if (now - due <= iv * BEAT_LATE_TOLERANCE) {
+    const side = state.beat % 2 === 0 ? 'L' : 'R';
+    const clip = clipBySide(side);
+    // Clip-timed: the beat is already sounding on its own schedule and this
+    // tick only drives the lamp. Fallback: the lamp follows what was
+    // actually written, so a stuttering chip means a congested link.
+    if (clip && (clipTimedBeat() || pulseBeat(clip))) flashBeat(side);
+  }
+
+  state.beat++;
+  let next = state.anchor + state.beat * iv;
+  if (next < now) {
+    state.beat += Math.ceil((now - next) / iv);
+    next = state.anchor + state.beat * iv;
+  }
+  state.timer = setTimeout(rhythmTick, Math.max(0, next - now));
+}
+
+// Screen wake lock while the beat runs. The stalls the skip logic above
+// papers over come mostly from the phone dimming or backgrounding the tab;
+// this removes the common cause instead of only handling its effect.
+// Best-effort: unsupported browsers and a refused request are both fine.
+let wakeLock = null;
+
+async function acquireWakeLock() {
+  if (!navigator.wakeLock || wakeLock) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) {
+    console.warn('[wakelock]', e.message);
+  }
+}
+
+function releaseWakeLock() {
+  if (!wakeLock) return;
+  wakeLock.release().catch(() => {});
+  wakeLock = null;
+}
+
+// The lock is dropped whenever the page is hidden and is not restored
+// automatically — re-take it when the patient comes back to the tab.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && state.rhythmOn) acquireWakeLock();
+});
+
+function startRhythm() {
+  if (state.rhythmOn) return;
+  state.rhythmOn = true;
+  state.beat = 0;
+  // Slot 0 sits BEAT_LEAD_MS out so the "G" frames have time to land; the
+  // lamp runs off the same anchor, so it stays in step with the clips.
+  const lead = clipTimedBeat() ? BEAT_LEAD_MS : 0;
+  state.anchor = performance.now() + lead;
+  $('rhythmBtn').textContent = 'Stopp';
+  $('rhythmBtn').classList.add('stop');
+  $('rhythmBtn').classList.remove('start');
+  acquireWakeLock();
+  armBeat(true);
+  startResync();
+  state.timer = setTimeout(rhythmTick, lead);
+}
+
+function stopRhythm() {
+  if (!state.rhythmOn) return;
+  state.rhythmOn = false;
+  clearTimeout(state.timer);
+  state.timer = null;
+  stopResync();
+  // Unconditional: "GX" is a no-op on a clip that never started a beat, and
+  // ignored outright by firmware that does not know the command — whereas a
+  // beat left running because clipTimedBeat() had flipped in the meantime
+  // would keep cueing a patient who pressed Stopp.
+  broadcast('GX');
+  $('rhythmBtn').textContent = 'Start';
+  $('rhythmBtn').classList.remove('stop');
+  $('rhythmBtn').classList.add('start');
+  releaseWakeLock();
+}
+
+// A tempo change mid-run re-anchors from now, so the new interval takes
+// effect immediately instead of the run catching up on old beat slots. The
+// slot counter is kept and the anchor moved instead of the other way round:
+// the counter carries the L/R alternation, and resetting it would make the
+// beat after a tempo change land on the same foot as the one before it.
+// Re-arming the clips is NOT done here: the new tempo has to reach them
+// first ("B" before "G", see ble.h), and that write is debounced. pushBpm()
+// calls armBeat() once the tempo has landed.
+function reanchorRhythm() {
+  if (!state.rhythmOn) return;
+  clearTimeout(state.timer);
+  const iv = beatInterval();
+  // Same lead as at start, so the slot the clips will be given is still far
+  // enough out for the "G" to get there before it.
+  const wait  = (clipTimedBeat() ? BEAT_LEAD_MS : 0) + iv;
+  const first = performance.now() + wait;
+  state.anchor = first - state.beat * iv;
+  state.timer = setTimeout(rhythmTick, wait);
+}
+
+// ---- Rendering -----------------------------------------------------
+function renderClips() {
+  const box = $('clips');
+  box.innerHTML = '';
+  if (!state.clips.length) {
+    box.innerHTML = '<span class="hint">Kein Clip verbunden.</span>';
+    return;
+  }
+  for (const c of [...state.clips].sort((a, b) => a.side.localeCompare(b.side))) {
+    const el = document.createElement('span');
+    el.className = 'chip';
+    el.dataset.side = c.side;
+    el.innerHTML = `<span class="dot"></span>${c.side === 'L' ? 'Links' : 'Rechts'}`;
+    const x = document.createElement('button');
+    x.textContent = '✕';
+    x.onclick = () => disconnectClip(c);
+    el.appendChild(x);
+    box.appendChild(el);
+  }
+  if (state.clips.length === 1) {
+    const only = state.clips[0].side === 'L' ? 'rechte' : 'linke';
+    const hint = document.createElement('span');
+    hint.className = 'hint';
+    hint.textContent = `Nur eine Seite verbunden — ${only} Schläge bleiben stumm.`;
+    box.appendChild(hint);
+  }
+  renderBeatSource();
+}
+
+// Reports which side is timing the beat, and names any clip whose firmware
+// cannot — that is the whole visible difference between a clip that has been
+// reflashed and one that has not.
+function renderBeatSource() {
+  const el = $('beatSource');
+  if (!el) return;
+  if (!state.clips.length) { el.textContent = ''; return; }
+  const old = state.clips.filter(c => !c.ownBeat).map(c => c.side === 'L' ? 'links' : 'rechts');
+  el.textContent = old.length
+    ? `Takt: Telefon — ältere Firmware auf ${old.join(' und ')}, ein Write pro Schlag.`
+    : 'Takt: Clip (eigener Zeitgeber, Phase wird nachgezogen).';
+}
+
+// ---- Wiring --------------------------------------------------------
+$('connectBtn').addEventListener('click', connect);
+
+document.querySelectorAll('.modes button').forEach(b =>
+  b.addEventListener('click', () => setMode(+b.dataset.mode)));
+
+$('cutoff').addEventListener('input', e => {
+  state.cutoff = +e.target.value;
+  $('cutoffVal').textContent = state.cutoff;
+  state.clips.forEach(c => { c.cutoff = state.cutoff; });
+  pushCutoff(state.cutoff);
+});
+
+$('markerWin').addEventListener('input', e => {
+  state.window = +e.target.value;
+  $('markerWinVal').textContent = state.window + ' Schritte';
+  const before = state.cutoff;
+  applyWindowBounds();
+  pushWindow(state.window);
+  if (state.cutoff !== before) {
+    $('cutoff').value = state.cutoff;
+    $('cutoffVal').textContent = state.cutoff;
+    state.clips.forEach(c => { c.cutoff = state.cutoff; });
+    pushCutoff(state.cutoff);
+  }
+});
+
+$('bpm').addEventListener('input', e => {
+  state.bpm = +e.target.value;
+  $('bpmVal').textContent = state.bpm + ' bpm';
+  pushBpm(state.bpm);
+  reanchorRhythm();
+});
+
+document.querySelectorAll('.intensity').forEach(el =>
+  el.addEventListener('input', e => {
+    state.intensity = +e.target.value;
+    syncUiFromState();
+    pushIntensity(state.intensity);
+  }));
+
+// "P" is honoured by the firmware in every mode the app can select, so
+// these three work from either panel, running or stopped. Both panels
+// carry a copy of the row — the selector picks up all six buttons.
+document.querySelectorAll('[data-pulse]').forEach(b =>
+  b.addEventListener('click', () => {
+    const t = b.dataset.pulse;
+    if (t === 'both') broadcast('P');
+    else sendCmd(clipBySide(t), 'P');
+  }));
+
+$('rhythmBtn').addEventListener('click', () => {
+  if (state.rhythmOn) stopRhythm(); else startRhythm();
+});
+
+// Not debounced, unlike the sliders: this is one write per tap, and the
+// firmware's own flash debounce still coalesces a burst of them.
+$('refractoryBtn').addEventListener('click', () => {
+  state.refractory = state.refractory ? 0 : 1;
+  renderRefractoryBtn();
+  broadcast('R' + state.refractory);
+});
+
+$('feedbackBtn').addEventListener('click', () => setFeedbackOn(!state.feedbackOn));
+
+// Catches midnight while the page sits open with nobody walking — the
+// per-step check alone would leave yesterday's score on screen until the
+// next step arrives.
+setInterval(() => { if (rollOverDay()) renderScore(); }, 60000);
+
+// Missing logo file → show the word instead of a broken image.
+const logoEl = $('logo');
+if (logoEl) logoEl.addEventListener('error', () => {
+  logoEl.hidden = true;
+  const w = $('wordmark');
+  if (w) w.hidden = false;
+});
+
+loadActivity();
+syncUiFromState();
+renderFeedbackBtn();
+renderClips();
+renderBlock();
+renderScore();
+</script>
+<script>
+// Zweiter der beiden Zusatzblöcke (siehe Kommentar im <head>): der Service
+// Worker macht die App offline-startfähig. Nur unter http(s) — unter file://
+// gibt es keinen Worker, und dort soll die Seite unverändert weiterlaufen.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW:', e));
+  });
+}
+</script>
+</body>
+</html>
