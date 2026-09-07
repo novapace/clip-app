@@ -361,6 +361,18 @@ const METRICS_UUID   = '4e7a5c00-0000-4e8a-a8d7-000000000002';
 const STATUS_UUID    = '4e7a5c00-0000-4e8a-a8d7-000000000003';
 const CONTROL_UUID   = '4e7a5c00-0000-4e8a-a8d7-000000000004';
 
+// Link gate — must match NOVAPACE_UNLOCK_TOKEN in src/config.h. A fresh
+// connection is locked: the clip rejects every command and notifies no step
+// data until this frame arrives, and drops the link entirely after
+// BLE_UNLOCK_TIMEOUT_MS (10 s) if it never does. So this must be the first
+// thing written after connecting.
+//
+// Not a secret, and not treated as one: it sits in this file, which is the
+// shipped app. Its job is that a clip cannot be driven by whoever finds it
+// in a BLE scanner, and that a stale client cannot squat the single
+// connection the clip allows. See docs/SECURITY_CONCEPT.md.
+const UNLOCK_TOKEN   = 'Np4x7Qr2';
+
 // Mirrors OpMode in src/config.h. The firmware still has four modes; the
 // UI exposes two of them (Feedback, Rhythmus) and uses the other two as
 // implementation detail — see activeFirmwareMode().
@@ -823,6 +835,12 @@ async function connect() {
       ownBeat: false,   // set from the status read in hydrate()
       lagMs: null,      // measured one-way trip for a control write
     };
+
+    // Unlock BEFORE subscribing or sending anything else: until this lands
+    // the clip ignores commands and sends no step data, and it drops the
+    // link after 10 s. Acknowledged write, so a failure surfaces here rather
+    // than as a clip that mysteriously goes quiet a few seconds later.
+    await sendCmd(clip, 'U' + UNLOCK_TOKEN, true);
 
     await clip.metricsChar.startNotifications();
     clip.metricsChar.addEventListener('characteristicvaluechanged',
