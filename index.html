@@ -6,35 +6,51 @@
 <title>novapace</title>
 <style>
   /* Palette built around the two logo colours: the teal of "pace" and the
-     green of "nova". Everything neutral is the same teal pushed down to near
-     black, so the page reads as one family instead of brand colours dropped
-     onto a blue-grey app.
-       --brand    rgb( 69,141,127)  as delivered, for fills and rules
-       --accent   the same teal two steps darker — white button labels need
-                  4.5:1 and the pure brand teal only reaches 4.0:1
+     green of "nova". The page is white and every neutral is that same teal
+     lightened or darkened against it, so the app still reads as one family
+     rather than brand colours dropped onto a grey sheet.
+       --brand    rgb( 69,141,127)  as delivered, for rules and the slider
+       --accent   the same teal darkened — white button labels need 4.5:1
+                  and the pure brand teal only reaches 3.9:1 on white
        --start    rgb(142,198,139)  as delivered, always with dark ink
-     Warning red and amber stay: they are the complement of this scheme, which
-     is exactly what an alarm colour should be. */
+       --score    a darker green for the ring and the connected dot: the
+                  logo green is 2.0:1 on white, which is all a logo needs
+                  and nowhere near enough for a line read as a value.
+     Three greys rather than one, because on white a single hairline colour
+     cannot do all three jobs it did on the dark ground:
+       --grid     hairlines — card edges, section rules, chip. Decorative:
+                  they separate, they carry nothing.
+       --track    the unfilled part of the score ring. A 12 px stroke, so it
+                  may stay soft, but it has to read as the rest of a scale.
+       --cell     the calendar tile. The strongest of the three, and not a
+                  matter of taste: a day with nothing recorded is drawn as
+                  its outline and NOTHING else, so if the outline is faint
+                  the day is simply missing from the month.
+     Warning red and amber are darkened for the same reason: on the old dark
+     ground they only had to glow, on white they have to be read. */
   :root {
     --brand: #458d7f; --brand-lt: #8ec68b;
-    --bg: #0d1614; --bar: #0b1312; --panel: #16221f; --grid: #27403a;
-    --fg: #e4eeea; --dim: #8fa8a0;
-    --h: #f0b357; --vib: #ef5350; --stop: #d3352f;
-    --accent: #3a7d70; --muted: #2c423b;
+    --bg: #ffffff; --bar: #ffffff; --panel: #f4f8f7;
+    --grid: #d5e1de; --track: #b5c8c3; --cell: #7f9691;
+    --fg: #10201d; --dim: #5a716c;
+    --h: #7a4d00; --vib: #ef5350; --stop: #c62828;
+    --accent: #2f6f63; --muted: #e6eeeb;
     --start: rgb(142, 198, 139);
-    --score: #8ec68b;
+    --score: #4f9a4b;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg);
                font-family: -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-  /* The bar is the darkest surface on the page on purpose: the logo's own
-     colours have to carry themselves here, and the teal half is the weaker of
-     the two. On --bar it sits at ~4.8:1, on the lighter --panel it would drop
-     to ~4.2:1. The rule underneath runs teal→green, the logo's own gradient. */
+  /* The bar is white like the page; what sets it apart is the rule beneath
+     it, which runs teal→green — the logo's own gradient. The logo is those
+     two colours on a transparent ground, and on white the teal half sits at
+     ~3.9:1 while the green half reaches only ~2.0:1. Soft, which is what a
+     mark is allowed to be, and the reason no TEXT is ever set in that green:
+     the fallback wordmark and the ok-status use --accent instead. */
   header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bar);
            border-bottom: 2px solid;
            border-image: linear-gradient(90deg, var(--brand), var(--brand-lt)) 1; }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; flex: 1; color: var(--brand-lt); }
+  header h1 { font-size: 16px; margin: 0; font-weight: 600; flex: 1; color: var(--accent); }
   /* The wordmark carries its own colours, so it gets breathing room rather
      than a background plate. flex:1 lets it take the space the <h1> used to;
      object-position keeps it left while the image itself stays inside its box
@@ -42,21 +58,25 @@
   header #logo { height: 26px; width: auto; max-width: 55%; flex: 1;
                  object-fit: contain; object-position: left center; }
   #status { font-size: 13px; color: var(--dim); }
-  #status.ok { color: var(--brand-lt); }
-  #status.bad { color: var(--vib); }
+  #status.ok { color: var(--accent); }
+  /* --vib is the beat flash, not an ink: 3.5:1 on white. --stop is the
+     same red darkened until 13 px of it is legible. */
+  #status.bad { color: var(--stop); }
   button { background: var(--accent); color: white; border: none; padding: 9px 16px; border-radius: 6px;
            font-size: 14px; font-weight: 600; cursor: pointer; }
   button:disabled { opacity: 0.4; cursor: default; }
-  button.secondary { background: var(--muted); }
+  button.secondary { background: var(--muted); color: var(--fg); }
   main { padding: 8px; display: flex; flex-direction: column; gap: 8px; height: calc(100vh - 49px); overflow-y: auto; }
 
   /* ---- Aktivitätsscore ---- */
-  .score { background: var(--panel); border-radius: 8px; padding: 14px 10px;
+  /* --panel is only a shade off white, so the cards carry a border as well
+     — without it they dissolve into the page. */
+  .score { background: var(--panel); border: 1px solid var(--grid); border-radius: 8px; padding: 14px 10px;
            display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .score .lbl { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
   .ring { width: 148px; height: 148px; position: relative; }
   .ring svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
-  .ring .track { fill: none; stroke: var(--grid); stroke-width: 12; }
+  .ring .track { fill: none; stroke: var(--track); stroke-width: 12; }
   .ring .arc   { fill: none; stroke: var(--score); stroke-width: 12; stroke-linecap: round;
                  transition: stroke-dashoffset 0.3s ease; }
   .ring .num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
@@ -64,26 +84,28 @@
   .score .sub { font-size: 12px; color: var(--dim); text-align: center; }
 
   /* ---- control panel ---- */
-  .ctl { background: var(--panel); border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+  .ctl { background: var(--panel); border: 1px solid var(--grid); border-radius: 8px; padding: 10px;
+         display: flex; flex-direction: column; gap: 10px; }
   .clips { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .chip { display: flex; align-items: center; gap: 6px; background: #1c2b27; border: 1px solid var(--grid);
+  .chip { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--grid);
           border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 13px; font-weight: 600; }
-  .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--brand-lt); }
+  .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--score); }
   .chip.beat .dot { background: var(--vib); box-shadow: 0 0 8px var(--vib); }
-  .chip button { padding: 2px 8px; font-size: 12px; border-radius: 999px; background: var(--muted); }
+  .chip button { padding: 2px 8px; font-size: 12px; border-radius: 999px; background: var(--muted);
+                 color: var(--fg); }
   .hint { font-size: 12px; color: var(--dim); }
 
   /* Block banner. Hidden entirely while nothing is holding the vibration
      back, so its presence alone is the signal — a permanently visible
      "nichts geblockt" line would be read past within a minute. */
   .block { display: none; white-space: pre-line; font-size: 13px; font-weight: 600;
-           color: var(--h); background: #2a2418; border: 1px solid #4a3d1c;
+           color: var(--h); background: #fff7e6; border: 1px solid #f0d9a3;
            border-radius: 6px; padding: 8px 10px; }
   .block.on { display: block; }
 
   .modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .modes button { background: var(--muted); padding: 10px 4px; font-size: 13px; }
-  .modes button.active { background: var(--accent); }
+  .modes button { background: var(--muted); color: var(--fg); padding: 10px 4px; font-size: 13px; }
+  .modes button.active { background: var(--accent); color: #fff; }
 
   .panel { display: none; flex-direction: column; gap: 10px; }
   .panel.active { display: flex; }
@@ -126,36 +148,6 @@
   details.adv .relock { align-self: flex-start; background: none; padding: 2px 0;
                         color: var(--dim); font-size: 12px; text-decoration: underline; }
 
-  /* ---- LED-Legende ----------------------------------------------------
-     Was die LED am Clip bedeutet. Die drei Betriebsfarben hängen am
-     Akkustand — dieselben Schwellen wie in src/config.h —, deshalb markiert
-     renderLedLegend() die Zeile, die für einen verbundenen Clip gerade gilt.
-     Einschalten, Laden und Fehler bleiben unmarkiert: in keinem dieser
-     Zustände steht eine BLE-Verbindung, die App kann sie also gar nicht
-     sehen. Der blinkende Punkt blinkt wirklich — "leuchtend" und "blinkend"
-     sind der ganze Unterschied zwischen zwei Zeilen mit derselben Farbe. */
-  details.led { border-top: 1px solid var(--grid); padding-top: 8px; }
-  details.led summary { font-size: 13px; color: var(--dim); cursor: pointer; padding: 4px 0;
-                        list-style: none; }
-  details.led summary::-webkit-details-marker { display: none; }
-  details.led summary::before { content: '\25B8 '; }
-  details.led[open] summary::before { content: '\25BE '; }
-  details.led table { border-collapse: collapse; width: 100%; margin-top: 6px; font-size: 12px; }
-  details.led td { padding: 5px 6px; vertical-align: top; border-top: 1px solid var(--grid);
-                   color: var(--dim); }
-  details.led tr:first-child td { border-top: none; }
-  details.led td.what { white-space: nowrap; font-weight: 600; }
-  details.led td.who { white-space: nowrap; text-align: right; }
-  details.led tr.now td { color: var(--fg); }
-  details.led .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-                    background: var(--c); box-shadow: 0 0 6px var(--c); }
-  details.led .sw.blink { animation: ledblink 1s steps(1, end) infinite; }
-  @keyframes ledblink { 50% { opacity: 0.15; box-shadow: none; } }
-  @media (prefers-reduced-motion: reduce) {
-    details.led .sw.blink { animation: none; opacity: 0.5; }
-  }
-  details.led .foot { font-size: 11px; color: var(--dim); margin-top: 6px; }
-
   /* ---- Monatskalender -------------------------------------------------
      Steht unter beiden Modus-Panels: der Verlauf ist dieselbe Aussage, egal
      welche Art Reiz der Patient gerade bekommt. Zwei Container statt eines
@@ -167,7 +159,8 @@
          display: flex; flex-direction: column; gap: 8px; }
   .cal-head { display: flex; align-items: center; gap: 6px; }
   .cal-title { flex: 1; font-size: 15px; font-weight: 600; }
-  .cal-nav { background: var(--muted); padding: 4px 14px; font-size: 16px; line-height: 1.2; }
+  .cal-nav { background: var(--muted); color: var(--fg); padding: 4px 14px; font-size: 16px;
+             line-height: 1.2; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .cal-wd { text-align: center; font-size: 11px; color: var(--dim);
             text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 2px; }
@@ -176,13 +169,16 @@
      Aufzeichnung muss sich von einem sehr schwachen gelaufenen Tag
      unterscheiden lassen — das ist der Unterschied zwischen "nicht getragen"
      und "kaum gelaufen", und den darf die Kachel nicht einebnen. */
-  .cal-day { background: transparent; border: 1px solid var(--grid); border-radius: 6px;
+  .cal-day { background: transparent; border: 1px solid var(--cell); border-radius: 6px;
              color: var(--fg); font-size: 13px; font-weight: 600; padding: 0; height: 34px; }
-  /* Auf kräftigem Grün ist helle Schrift nicht mehr zu lesen — dieselbe
-     Umschaltung wie bei den Start-Tasten weiter oben. */
+  /* Die Füllung geht von weiß nach Grün, dunkle Schrift trägt also über den
+     ganzen Bereich — anders als auf dunklem Grund, wo die schwachen Kacheln
+     helle und die kräftigen dunkle Schrift brauchten. Die Umschaltung bleibt
+     trotzdem: sie hält die kräftigsten Kacheln auf der dunkelsten Tinte, und
+     mit ihr die Kalender-Logik unverändert. */
   .cal-day.ink { color: #12240f; }
   .cal-day.other { border-color: transparent; color: var(--dim); background: transparent; }
-  .cal-day.today { border-color: var(--brand-lt); }
+  .cal-day.today { border-color: var(--brand); }
   .cal-day.sel { box-shadow: 0 0 0 2px var(--fg); }
   .cal-read { font-size: 12px; color: var(--dim); min-height: 16px; }
   .cal-read b { color: var(--fg); }
@@ -195,7 +191,7 @@
      Firmware-Repo und baut neu; hier von Hand zu editieren ist sinnlos, der
      nächste Build überschreibt es. -->
 <link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#0b1312">
+<meta name="theme-color" content="#ffffff">
 <link rel="icon" href="icon-192.png" type="image/png">
 </head>
 <body>
@@ -231,45 +227,6 @@
 
   <div class="ctl">
     <div class="clips" id="clips"><span class="hint">Kein Clip verbunden.</span></div>
-    <!-- LED-Legende. Steht direkt unter den Clip-Chips, weil die drei
-         Betriebszeilen genau die Akkuprozente erklären, die dort stehen:
-         >= 40 % grün, >= 15 % gelb, darunter orange (src/config.h). -->
-    <details class="led" id="ledHelp">
-      <summary>Was die LED am Clip bedeutet</summary>
-      <table>
-        <tbody>
-          <tr data-led="boot"><td><span class="sw blink" style="--c:#3d7bff"></span></td>
-            <td class="what">Blau blinkend</td>
-            <td>Gerät wird eingeschaltet.</td><td class="who"></td></tr>
-          <tr data-led="ok"><td><span class="sw" style="--c:#3ad14f"></span></td>
-            <td class="what">Grün leuchtend</td>
-            <td>Gerät in Betrieb, Akku ausreichend geladen.</td><td class="who"></td></tr>
-          <tr data-led="low"><td><span class="sw" style="--c:#e8d43a"></span></td>
-            <td class="what">Gelb leuchtend</td>
-            <td>Gerät in Betrieb, der Akku ist teilweise entladen und sollte demnächst geladen
-                werden.</td><td class="who"></td></tr>
-          <tr data-led="crit"><td><span class="sw" style="--c:#ff8c1a"></span></td>
-            <td class="what">Orange leuchtend</td>
-            <td>Gerät in Betrieb, der Akku ist fast komplett entladen und muss geladen werden,
-                sonst schaltet sich das System selbst ab.</td><td class="who"></td></tr>
-          <tr data-led="charge"><td><span class="sw blink" style="--c:#ff8c1a"></span></td>
-            <td class="what">Orange blinkend</td>
-            <td>Der Akku lädt.</td><td class="who"></td></tr>
-          <tr data-led="full"><td><span class="sw blink" style="--c:#3ad14f"></span></td>
-            <td class="what">Grün blinkend</td>
-            <td>Der Akku ist vollständig geladen und das Kabel kann entfernt werden.</td>
-            <td class="who"></td></tr>
-          <tr data-led="err"><td><span class="sw blink" style="--c:#ef5350"></span></td>
-            <td class="what">Rot blinkend</td>
-            <td>Systemfehler. Bitte strideassist und ggf. App neu starten.</td><td class="who"></td></tr>
-        </tbody>
-      </table>
-      <div class="foot">Markiert ist, was ein verbundener Clip gerade zeigt. Beim Einschalten,
-        am Ladekabel und im Fehlerfall besteht keine Verbindung — diese Zeilen kann die App
-        nicht markieren.</div>
-    </details>
-
-
     <div class="modes">
       <button data-mode="0" class="active">Feedbackmodus</button>
       <button data-mode="1">Rhythmischer Modus</button>
@@ -1523,35 +1480,11 @@ function reanchorRhythm() {
 
 // ---- Rendering -----------------------------------------------------
 
-// Akkustand des Clips, so wie ihn die LED zeigt: >= 40 % grün, >= 15 % gelb,
-// darunter orange — die Schwellen stehen in src/config.h. Leer, solange der
-// Clip nichts gemeldet hat (ältere Firmware oder noch nicht gemessen).
-const BATT_YELLOW = 40;
+// Ab wann der Akku als fast leer gilt — dieselbe Schwelle, ab der der Clip
+// seine LED auf Orange stellt (BATTERY_PCT_YELLOW_MIN in src/config.h).
+// Darunter schaltet er sich irgendwann selbst ab, und genau davor warnt
+// renderClips(). null heißt: der Clip hat noch nichts gemeldet.
 const BATT_ORANGE = 15;
-// Welche der drei Betriebsfarben die LED eines Clips gerade zeigt, abgeleitet
-// aus dem gemeldeten Akkustand — mit denselben Schwellen, nach denen der Clip
-// seine Farbe wählt (BATTERY_PCT_GREEN_MIN / _YELLOW_MIN in src/config.h).
-// null, solange der Clip nichts gemeldet hat.
-const ledStateFor = c => (c.batt == null ? null
-                        : c.batt >= BATT_YELLOW ? 'ok'
-                        : c.batt >= BATT_ORANGE ? 'low' : 'crit');
-
-// Markiert in der Legende die Zeile, die für die verbundenen Clips gerade
-// gilt. Nur die drei Betriebszeilen sind erreichbar: lädt ein Clip, ist er
-// gar nicht verbunden (am Kabel startet die Gangpipeline nicht), und beim
-// Einschalten oder im Fehlerfall ebenso wenig.
-function renderLedLegend() {
-  const marks = { ok: [], low: [], crit: [] };
-  for (const c of state.clips) {
-    const st = ledStateFor(c);
-    if (st) marks[st].push(c.side === 'L' ? 'links' : 'rechts');
-  }
-  for (const tr of document.querySelectorAll('#ledHelp tr[data-led]')) {
-    const who = marks[tr.dataset.led] || [];
-    tr.classList.toggle('now', who.length > 0);
-    tr.querySelector('.who').textContent = who.length ? '\u25C0 ' + who.join(' + ') : '';
-  }
-}
 
 const battLabel = c => (c.batt == null ? '' : ` · ${c.batt} %`);
 const battLow = c => c.batt != null && c.batt < BATT_ORANGE;
@@ -1597,7 +1530,6 @@ function renderClips() {
     box.appendChild(hint);
   }
   renderBeatSource();
-  renderLedLegend();
 }
 
 // Reports which side is timing the beat, and names any clip whose firmware
