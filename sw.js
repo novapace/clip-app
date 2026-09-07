@@ -4,10 +4,15 @@
 // ohne Netz. Mit dem Clip spricht sie über Web Bluetooth, daran hat der Worker
 // keinen Anteil — er sieht ausschließlich die statischen Dateien dieser Seite.
 //
-// WICHTIG: Bei jeder Änderung an index.html oder den Assets CACHE hochzählen.
-// Der alte Cache wird beim activate gelöscht; ohne neuen Namen bliebe eine
-// bereits installierte App auf ihrer alten Fassung stehen.
-const CACHE = 'novapace-clip-v2';
+// CACHE wird beim Bauen gesetzt: tools/build_app.py ersetzt __CACHE__ durch
+// einen Hash über die gebauten Dateien. Früher stand hier eine Versionsnummer,
+// die bei jeder Änderung von Hand hochzuzählen war — und genau das ist der
+// Handgriff, den man vergisst. Ein vergessener Bump ist auch nicht folgenlos:
+// der alte Cache wird beim activate gelöscht, ohne neuen Namen passiert das
+// nie, und ein bereits installiertes Telefon bleibt auf seiner alten Fassung
+// stehen. Aus dem Inhalt abgeleitet kann das nicht mehr passieren, und ein
+// Bauen ohne Änderung erzeugt denselben Namen, wirft also auch nichts weg.
+const CACHE = 'novapace-clip-db4373e60741';
 
 const ASSETS = [
   './',

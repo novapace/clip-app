@@ -115,12 +115,85 @@
   details.adv summary::before { content: '▸ '; }
   details.adv[open] summary::before { content: '▾ '; }
   details.adv .body { display: flex; flex-direction: column; gap: 10px; padding-top: 8px; }
+  /* Freigabe-Geste (7× auf das Logo, siehe #advanced im Markup). Der Zähler
+     sitzt auf dem Schriftzug, also braucht der eine Tap-Highlight, der nicht
+     wie ein Knopf aussieht, und keine Textauswahl beim schnellen Tippen. */
+  header #logo, header #wordmark { -webkit-tap-highlight-color: transparent;
+                                   -webkit-user-select: none; user-select: none; }
+  /* Eigene Zeile statt Overlay: die Rückmeldung darf nichts verdecken, und
+     sie räumt sich nach kurzer Zeit selbst weg. */
+  .unlock { font-size: 12px; color: var(--dim); text-align: center; padding-top: 2px; }
+  details.adv .relock { align-self: flex-start; background: none; padding: 2px 0;
+                        color: var(--dim); font-size: 12px; text-decoration: underline; }
+
+  /* ---- LED-Legende ----------------------------------------------------
+     Was die LED am Clip bedeutet. Die drei Betriebsfarben hängen am
+     Akkustand — dieselben Schwellen wie in src/config.h —, deshalb markiert
+     renderLedLegend() die Zeile, die für einen verbundenen Clip gerade gilt.
+     Einschalten, Laden und Fehler bleiben unmarkiert: in keinem dieser
+     Zustände steht eine BLE-Verbindung, die App kann sie also gar nicht
+     sehen. Der blinkende Punkt blinkt wirklich — "leuchtend" und "blinkend"
+     sind der ganze Unterschied zwischen zwei Zeilen mit derselben Farbe. */
+  details.led { border-top: 1px solid var(--grid); padding-top: 8px; }
+  details.led summary { font-size: 13px; color: var(--dim); cursor: pointer; padding: 4px 0;
+                        list-style: none; }
+  details.led summary::-webkit-details-marker { display: none; }
+  details.led summary::before { content: '\25B8 '; }
+  details.led[open] summary::before { content: '\25BE '; }
+  details.led table { border-collapse: collapse; width: 100%; margin-top: 6px; font-size: 12px; }
+  details.led td { padding: 5px 6px; vertical-align: top; border-top: 1px solid var(--grid);
+                   color: var(--dim); }
+  details.led tr:first-child td { border-top: none; }
+  details.led td.what { white-space: nowrap; font-weight: 600; }
+  details.led td.who { white-space: nowrap; text-align: right; }
+  details.led tr.now td { color: var(--fg); }
+  details.led .sw { display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+                    background: var(--c); box-shadow: 0 0 6px var(--c); }
+  details.led .sw.blink { animation: ledblink 1s steps(1, end) infinite; }
+  @keyframes ledblink { 50% { opacity: 0.15; box-shadow: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    details.led .sw.blink { animation: none; opacity: 0.5; }
+  }
+  details.led .foot { font-size: 11px; color: var(--dim); margin-top: 6px; }
+
+  /* ---- Monatskalender -------------------------------------------------
+     Steht unter beiden Modus-Panels: der Verlauf ist dieselbe Aussage, egal
+     welche Art Reiz der Patient gerade bekommt. Zwei Container statt eines
+     verschobenen Knotens — der Moduswechsel schaltet nur Panels sichtbar
+     und soll nichts umhängen müssen —, gerendert aus einem einzigen Zustand
+     (calYear/calMonth/calSel), sodass sie gar nicht auseinanderlaufen
+     können. */
+  .cal { border-top: 1px solid var(--grid); padding-top: 10px;
+         display: flex; flex-direction: column; gap: 8px; }
+  .cal-head { display: flex; align-items: center; gap: 6px; }
+  .cal-title { flex: 1; font-size: 15px; font-weight: 600; }
+  .cal-nav { background: var(--muted); padding: 4px 14px; font-size: 16px; line-height: 1.2; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-wd { text-align: center; font-size: 11px; color: var(--dim);
+            text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 2px; }
+  /* Rahmen immer, Füllung nur so kräftig wie der Score. 0 % ist deshalb
+     wirklich durchsichtig und nicht "sehr blasses Grün": ein Tag ohne
+     Aufzeichnung muss sich von einem sehr schwachen gelaufenen Tag
+     unterscheiden lassen — das ist der Unterschied zwischen "nicht getragen"
+     und "kaum gelaufen", und den darf die Kachel nicht einebnen. */
+  .cal-day { background: transparent; border: 1px solid var(--grid); border-radius: 6px;
+             color: var(--fg); font-size: 13px; font-weight: 600; padding: 0; height: 34px; }
+  /* Auf kräftigem Grün ist helle Schrift nicht mehr zu lesen — dieselbe
+     Umschaltung wie bei den Start-Tasten weiter oben. */
+  .cal-day.ink { color: #12240f; }
+  .cal-day.other { border-color: transparent; color: var(--dim); background: transparent; }
+  .cal-day.today { border-color: var(--brand-lt); }
+  .cal-day.sel { box-shadow: 0 0 0 2px var(--fg); }
+  .cal-read { font-size: 12px; color: var(--dim); min-height: 16px; }
+  .cal-read b { color: var(--fg); }
 </style>
-<!-- ─── Ergänzungen gegenüber tools/client_app.html im Firmware-Repo ───────────
-     Es sind genau zwei Blöcke: dieser hier und die Service-Worker-Registrierung
-     am Ende von <body>. Alles dazwischen ist unveränderte Kopie. Wer die App
-     drüben weiterentwickelt, kopiert die Datei erneut hierher und setzt die
-     beiden Blöcke wieder ein — mehr ist beim Abgleich nicht zu tun. -->
+<!-- ─── Ergänzungen gegenüber tools/client_app.html ────────────────────────────
+     Diese Datei ist gebaut, nicht gepflegt: tools/build_app.py nimmt
+     client_app.html und fügt genau zwei Blöcke ein — diesen hier vor </head>
+     und die Service-Worker-Registrierung vor </body>. Alles dazwischen ist
+     unveränderte Kopie. Wer die App ändert, ändert client_app.html im
+     Firmware-Repo und baut neu; hier von Hand zu editieren ist sinnlos, der
+     nächste Build überschreibt es. -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b1312">
 <link rel="icon" href="icon-192.png" type="image/png">
@@ -140,6 +213,11 @@
 
 <main>
 
+  <!-- Zähl-Rückmeldung der Logo-Geste. Erst ab der vierten Berührung sichtbar:
+       davor ist ein Tipper plausibel ein Versehen, und ein Hinweis, der schon
+       beim ersten erscheint, verrät die Geste an jeden, der das Logo streift. -->
+  <div class="unlock" id="unlockHint" hidden></div>
+
   <div class="score">
     <div class="lbl">Aktivitätsscore</div>
     <div class="ring">
@@ -153,6 +231,44 @@
 
   <div class="ctl">
     <div class="clips" id="clips"><span class="hint">Kein Clip verbunden.</span></div>
+    <!-- LED-Legende. Steht direkt unter den Clip-Chips, weil die drei
+         Betriebszeilen genau die Akkuprozente erklären, die dort stehen:
+         >= 40 % grün, >= 15 % gelb, darunter orange (src/config.h). -->
+    <details class="led" id="ledHelp">
+      <summary>Was die LED am Clip bedeutet</summary>
+      <table>
+        <tbody>
+          <tr data-led="boot"><td><span class="sw blink" style="--c:#3d7bff"></span></td>
+            <td class="what">Blau blinkend</td>
+            <td>Gerät wird eingeschaltet.</td><td class="who"></td></tr>
+          <tr data-led="ok"><td><span class="sw" style="--c:#3ad14f"></span></td>
+            <td class="what">Grün leuchtend</td>
+            <td>Gerät in Betrieb, Akku ausreichend geladen.</td><td class="who"></td></tr>
+          <tr data-led="low"><td><span class="sw" style="--c:#e8d43a"></span></td>
+            <td class="what">Gelb leuchtend</td>
+            <td>Gerät in Betrieb, der Akku ist teilweise entladen und sollte demnächst geladen
+                werden.</td><td class="who"></td></tr>
+          <tr data-led="crit"><td><span class="sw" style="--c:#ff8c1a"></span></td>
+            <td class="what">Orange leuchtend</td>
+            <td>Gerät in Betrieb, der Akku ist fast komplett entladen und muss geladen werden,
+                sonst schaltet sich das System selbst ab.</td><td class="who"></td></tr>
+          <tr data-led="charge"><td><span class="sw blink" style="--c:#ff8c1a"></span></td>
+            <td class="what">Orange blinkend</td>
+            <td>Der Akku lädt.</td><td class="who"></td></tr>
+          <tr data-led="full"><td><span class="sw blink" style="--c:#3ad14f"></span></td>
+            <td class="what">Grün blinkend</td>
+            <td>Der Akku ist vollständig geladen und das Kabel kann entfernt werden.</td>
+            <td class="who"></td></tr>
+          <tr data-led="err"><td><span class="sw blink" style="--c:#ef5350"></span></td>
+            <td class="what">Rot blinkend</td>
+            <td>Systemfehler. Bitte strideassist und ggf. App neu starten.</td><td class="who"></td></tr>
+        </tbody>
+      </table>
+      <div class="foot">Markiert ist, was ein verbundener Clip gerade zeigt. Beim Einschalten,
+        am Ladekabel und im Fehlerfall besteht keine Verbindung — diese Zeilen kann die App
+        nicht markieren.</div>
+    </details>
+
 
     <div class="modes">
       <button data-mode="0" class="active">Feedbackmodus</button>
@@ -177,7 +293,18 @@
            collapsed block so the whole section can be deleted before rollout
            without touching the rest of the panel. The three settings and the
            block banner are the same ones the development app exposes. -->
-      <details class="adv" id="advanced">
+      <!-- Versteckt, bis jemand siebenmal auf den Schriftzug tippt (siehe
+           onBrandTap() unten). Ein Patient darf diesen Reglern nicht
+           versehentlich begegnen: Marker-Schwelle und Schritt-Fenster
+           entscheiden, WANN der Clip einen Reiz gibt, und ein im Wartezimmer
+           verschobener Regler verändert die Therapie, ohne dass es jemandem
+           auffällt. Sieben Tipper auf ein passives Kopfzeilen-Element sind die
+           Android-Build-Number-Geste: keine sichtbare Einladung, kein
+           Bedienelement, das auf dem Weg zu etwas anderem getroffen wird, und
+           für die Therapeutin zwei Sekunden Aufwand. Bewusst NICHT gespeichert
+           — ein Neuladen sperrt wieder zu, ein zurückgegebenes Telefon ist
+           also immer zu. -->
+      <details class="adv" id="advanced" hidden>
         <summary>Erweiterte Einstellungen</summary>
         <div class="body">
           <div class="slider">
@@ -193,8 +320,16 @@
           <!-- Which side is timing the rhythm. The only way to see, without a
                serial cable, whether a clip carries firmware that can do it. -->
           <span class="hint" id="beatSource"></span>
+          <!-- Der Weg zurück. Ohne ihn müsste die Seite neu geladen werden, um
+               das Telefon wieder patientensicher zu machen — und das kostet
+               die Verbindung zu beiden Clips. -->
+          <button class="relock" id="relockBtn">Erweiterte Einstellungen ausblenden</button>
         </div>
       </details>
+
+      <!-- Monatsübersicht. Inhalt kommt komplett aus renderCalendar(); beide
+           Panels bekommen denselben Container, gefüllt aus demselben Zustand. -->
+      <section class="cal" aria-label="Monatsübersicht"></section>
     </div>
 
     <!-- Mode 1 — rhythmic cueing, timed by THIS device -->
@@ -213,6 +348,8 @@
         <button class="big" data-pulse="both">Beidseitig</button>
         <button class="big" data-pulse="R">Rechts</button>
       </div>
+
+      <section class="cal" aria-label="Monatsübersicht"></section>
     </div>
   </div>
 
@@ -355,6 +492,25 @@ function loadActivity() {
   const cutoff = dayKey(new Date(Date.now() - KEEP_DAYS * 86400000));
   for (const k of Object.keys(activity.days)) if (k < cutoff) delete activity.days[k];
   today = dayKey();
+  requestPersistentStorage();
+}
+
+// Ask the browser to treat this origin's storage as persistent rather than as
+// cache it may discard when the phone runs short of space. Without it the only
+// copy of a patient's recorded days — there is no backup and no server — sits
+// in a bucket the browser is allowed to evict. An installed app is normally
+// granted it without a prompt; a page merely visited often is not, which is one
+// more reason to have patients install it.
+//
+// Best effort throughout: not every browser has the API, the answer may be no,
+// and neither case is worth telling the patient about. Deliberately not awaited
+// — loadActivity() must not wait on a permission check.
+function requestPersistentStorage() {
+  if (!navigator.storage || !navigator.storage.persist) return;
+  navigator.storage.persisted()
+    .then((already) => already || navigator.storage.persist())
+    .then((granted) => console.info('[activity] persistent storage:', granted))
+    .catch((e) => console.warn('[activity] persistent storage:', e.message));
 }
 
 // Written on a delay: a brisk walk is a few steps per second, and every one
@@ -387,13 +543,19 @@ function dayDistance(entry) {
 }
 
 // Mean effective distance over the last REF_DAYS days that actually saw
-// activity, today excluded. Days without any recorded steps are skipped
+// activity, before `key`. Days without any recorded steps are skipped
 // entirely instead of pulling the mean down — a fortnight without the clip
 // must not make the next walk look like a record. Neither this figure nor
 // the day's distance is shown: the patient sees one number, the percentage.
-function referenceDistance() {
+//
+// Takes the day as an argument rather than always meaning today, because the
+// calendar scores past days by the same rule: each against the reference that
+// stood BEFORE it. That is the number the ring showed on the day itself, so a
+// good day stays a good day however the weeks after it went — a tile's colour
+// never changes again once its day is over.
+function referenceBefore(key) {
   const past = Object.keys(activity.days)
-    .filter(k => k < today)
+    .filter(k => k < key)
     .sort()
     .reverse()
     .map(k => dayDistance(activity.days[k]))
@@ -401,6 +563,18 @@ function referenceDistance() {
     .slice(0, REF_DAYS);
   if (!past.length) return REF_DEFAULT;
   return past.reduce((a, b) => a + b, 0) / past.length;
+}
+
+function referenceDistance() { return referenceBefore(today); }
+
+// Score of one day in percent, or null when nothing was recorded that day.
+// null rather than 0 on purpose: "clip not worn" and "walked very little" are
+// different statements, and the calendar draws them differently.
+function dayScore(key) {
+  const walked = dayDistance(activity.days[key]);
+  if (walked <= 0) return null;
+  const ref = referenceBefore(key);
+  return ref > 0 ? (walked / ref) * 100 : 0;
 }
 
 // Called before every read and write of today's entry, and once a minute, so
@@ -433,6 +607,128 @@ function renderScore() {
   const arc = $('scoreArc');
   arc.style.strokeDasharray = ARC_LEN;
   arc.style.strokeDashoffset = ARC_LEN * (1 - Math.min(1, Math.max(0, pct / 100)));
+
+  paintTodayCells();
+}
+
+// ---- Monatskalender --------------------------------------------------
+// Ein Feld pro Tag, eingefärbt nach dem Score dieses Tages (dayScore()).
+// Unter beiden Modus-Panels, siehe den CSS-Block zu .cal.
+const CAL_MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli',
+                    'August', 'September', 'Oktober', 'November', 'Dezember'];
+// Montag zuerst — deutsche Wochenkonvention, der Sonntag steht am Ende.
+const CAL_WEEKDAYS = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const CAL_DAYNAMES = ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag',
+                      'Freitag', 'Samstag'];
+// Ab diesem Score wird die Füllung dunkel genug, dass helle Ziffern darauf
+// untergehen; darunter bleibt es bei der normalen Schriftfarbe.
+const CAL_INK_PCT = 55;
+
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let calSel   = today;   // angetipptes Feld; anfangs heute, wie im Ring
+
+// Füllfarbe eines Tagesfeldes: --brand-lt mit dem Score als Deckkraft.
+// Über 100 % wird nichts kräftiger — voll ist voll; die genaue Zahl steht
+// weiterhin in der Lesezeile darunter.
+function scoreFill(pct) {
+  if (pct == null) return 'transparent';
+  const a = Math.min(1, Math.max(0, pct / 100));
+  return `rgba(142, 198, 139, ${a.toFixed(3)})`;
+}
+
+function calReadout() {
+  const [y, m, d] = calSel.split('-').map(Number);
+  const label = `${CAL_DAYNAMES[new Date(y, m - 1, d).getDay()]}, `
+              + `${d}. ${CAL_MONTHS[m - 1]} ${y}`;
+  const pct = dayScore(calSel);
+  return pct == null ? `${label} — <b>keine Aufzeichnung</b>`
+                     : `${label} — <b>${Math.round(pct)} %</b>`;
+}
+
+function renderCalendar() {
+  const boxes = document.querySelectorAll('.cal');
+  if (!boxes.length) return;
+
+  // getDay() zählt ab Sonntag; auf Montag-zuerst umrechnen.
+  const lead    = (new Date(calYear, calMonth, 1).getDay() + 6) % 7;
+  const days    = new Date(calYear, calMonth + 1, 0).getDate();
+  const prevEnd = new Date(calYear, calMonth, 0).getDate();
+
+  // Die Nachbarmonatstage stehen nur da, damit das Gitter nicht ausfranst:
+  // ausgegraut, nicht anklickbar, ohne Score — ihr Score gehört in ihren
+  // eigenen Monat, und ihn hier einzufärben hätte denselben Tag zweimal
+  // verschieden bunt gezeigt.
+  let cells = '';
+  for (let i = lead; i > 0; --i) {
+    cells += `<button class="cal-day other" disabled>${prevEnd - i + 1}</button>`;
+  }
+  for (let d = 1; d <= days; ++d) {
+    const key = dayKey(new Date(calYear, calMonth, d));
+    const pct = dayScore(key);
+    let cls = 'cal-day';
+    if (pct != null && pct >= CAL_INK_PCT) cls += ' ink';
+    if (key === today)  cls += ' today';
+    if (key === calSel) cls += ' sel';
+    cells += `<button class="${cls}" data-day="${key}" `
+           + `style="background:${scoreFill(pct)}">${d}</button>`;
+  }
+  const trail = (7 - ((lead + days) % 7)) % 7;
+  for (let d = 1; d <= trail; ++d) {
+    cells += `<button class="cal-day other" disabled>${d}</button>`;
+  }
+
+  const html =
+      '<div class="cal-head">'
+    +   `<div class="cal-title">${CAL_MONTHS[calMonth]} ${calYear}</div>`
+    +   '<button class="cal-nav" data-step="-1" aria-label="Vorheriger Monat">\u2039</button>'
+    +   '<button class="cal-nav" data-step="1" aria-label="Nächster Monat">\u203A</button>'
+    + '</div>'
+    + '<div class="cal-grid">'
+    +   CAL_WEEKDAYS.map(w => `<div class="cal-wd">${w}</div>`).join('')
+    +   cells
+    + '</div>'
+    + `<div class="cal-read">${calReadout()}</div>`;
+
+  for (const box of boxes) box.innerHTML = html;
+}
+
+// Nur das heutige Feld nachziehen. renderScore() läuft einmal pro Schritt,
+// und ein kompletter Gitteraufbau wäre dafür zu viel — nötig ist er auch
+// nicht: die Referenz eines vergangenen Tages schaut ausschließlich auf Tage
+// davor, seine Farbe kann der heutige Weg also gar nicht mehr ändern.
+function paintTodayCells() {
+  const pct  = dayScore(today);
+  const fill = scoreFill(pct);
+  for (const el of document.querySelectorAll(`.cal-day[data-day="${today}"]`)) {
+    el.style.background = fill;
+    el.classList.toggle('ink', pct != null && pct >= CAL_INK_PCT);
+  }
+  if (calSel === today) {
+    for (const el of document.querySelectorAll('.cal-read')) el.innerHTML = calReadout();
+  }
+}
+
+// Delegiert, weil renderCalendar() den Inhalt jedes Mal neu schreibt — auf
+// den Containern bleiben die Handler dabei stehen.
+function wireCalendar() {
+  for (const box of document.querySelectorAll('.cal')) {
+    box.addEventListener('click', (ev) => {
+      const nav = ev.target.closest('.cal-nav');
+      if (nav) {
+        const d = new Date(calYear, calMonth + (+nav.dataset.step), 1);
+        calYear  = d.getFullYear();
+        calMonth = d.getMonth();
+        renderCalendar();
+        return;
+      }
+      const day = ev.target.closest('.cal-day[data-day]');
+      if (day) {
+        calSel = day.dataset.day;
+        renderCalendar();
+      }
+    });
+  }
 }
 
 // ---- BLE -----------------------------------------------------------
@@ -523,6 +819,7 @@ async function connect() {
       metricsChar: await service.getCharacteristic(METRICS_UUID),
       ctrlChar:    await service.getCharacteristic(CONTROL_UUID),
       lastSeq: -1, cutoff: state.cutoff, block: null, pulsePending: false,
+      batt: null,       // Akku in %, aus dem Heartbeat-Frame (null = unbekannt)
       ownBeat: false,   // set from the status read in hydrate()
       lagMs: null,      // measured one-way trip for a control write
     };
@@ -646,17 +943,29 @@ const BLOCK_REASONS = [
   [0x40, 'Schwankung Kontaktwinkel'],
 ];
 
-// "HS10 A10 N4" — 11 chars, fixed-offset ASCII, see src/comms/ble.h.
+// "HS10 A10 N4 T1 B085" — 19 chars, fixed-offset ASCII, see src/comms/ble.h.
 //   S = heuristics that fired on the last step
 //   A = the reason still holding the block, 00 if none
 //   N = steps that block has left to run
+//   T = Treppen-Sperre in force (0/1). Not one of the S/A bits: those are
+//       marker-path reasons, this one is the actuator refusing EVERY
+//       request — the manual button and the rhythm beat included. Read
+//       defensively: a clip flashed before the field existed sends the
+//       11-char frame, which still parses and reports no lockout.
+//   B = Akkuladung in Prozent, "---" solange der Clip noch nicht gemessen
+//       hat. Ladezustand, nicht die rohe Zellspannung — die Kurve dazu
+//       steht in src/hardware/board.cpp. Fehlt bei älterer Firmware,
+//       dasselbe defensive Lesen wie bei T.
 function parseBlock(s) {
   if (s.length < 11 || s[0] !== 'H') return null;
   const fired  = parseInt(s.substring(2, 4), 16);
   const active = parseInt(s.substring(6, 8), 16);
   const steps  = parseInt(s[10], 10);
   if (Number.isNaN(fired) || Number.isNaN(active) || Number.isNaN(steps)) return null;
-  return { fired, active, steps };
+  const stair = s.length >= 14 && s[12] === 'T' && s[13] === '1';
+  const battRaw = s.length >= 19 && s[15] === 'B' ? parseInt(s.substring(16, 19), 10) : NaN;
+  const batt = Number.isNaN(battRaw) ? null : battRaw;
+  return { fired, active, steps, stair, batt };
 }
 
 // Both masks, not just the active one. Only ONE reason can own the
@@ -668,15 +977,24 @@ function parseBlock(s) {
 // steps, so it never appears in "active" at all. On the steps that merely
 // sit inside a running countdown the fired mask is zero, so only the owner
 // is named.
+//
+// The Treppen-Sperre is listed FIRST and separately from the named
+// heuristics, because it is a different statement: the marker reasons say
+// "this step earned no cue", the lockout says the clip is refusing the
+// manual button and the beat as well. It also has to show on its own — a
+// stair step that trips no marker heuristic still locks the actuator, and
+// a banner that stayed empty there would read as "nothing is blocked".
 function blockText(b) {
   if (!b) return '';
   const mask = b.active | b.fired;
   const names = BLOCK_REASONS.filter(([bit]) => mask & bit).map(([, n]) => n);
-  if (!names.length) return '';
   const tail = b.steps > 0
     ? ` + ${b.steps} ${b.steps === 1 ? 'Schritt' : 'Schritte'}`
     : '';
-  return `Vibration geblockt (${names.join(', ')}${tail})`;
+  const parts = [];
+  if (b.stair) parts.push('Treppe erkannt — jede Vibration gesperrt');
+  if (names.length) parts.push(`Vibration geblockt (${names.join(', ')}${tail})`);
+  return parts.join(' · ');
 }
 
 // Called ~10× per second per clip, so it writes to the DOM only when the
@@ -702,6 +1020,12 @@ function onStatus(clip, ev) {
   const b = parseBlock(new TextDecoder().decode(ev.target.value));
   if (!b) return;
   clip.block = b;
+  // The battery arrives on every heartbeat but only changes every few
+  // minutes, so the chips are only redrawn when the number actually moved.
+  if (b.batt !== clip.batt) {
+    clip.batt = b.batt;
+    renderClips();
+  }
   renderBlock();
 }
 
@@ -776,6 +1100,9 @@ function renderFeedbackBtn() {
   b.textContent = state.feedbackOn ? 'Stopp' : 'Start';
   b.classList.toggle('stop',  state.feedbackOn);
   b.classList.toggle('start', !state.feedbackOn);
+  // Runs on every feedback toggle AND on every mode switch (setMode calls it),
+  // so it is the natural place to re-decide the wake lock for this side.
+  syncWakeLock();
 }
 
 // The 18 s is VIBRATION_REFRACTORY_MS in src/config.h. Only the switch is
@@ -1099,10 +1426,27 @@ function releaseWakeLock() {
   wakeLock = null;
 }
 
+// One place that decides whether the lock should be held, called from every
+// point that can change the answer. Feedback mode needs it as much as the beat
+// does, and for a less obvious reason: there the phone is not producing
+// anything, it is RECORDING. A locked screen freezes the page, the step
+// notifications stop arriving, and the walk quietly does not count towards the
+// score — the one thing that mode exists to measure.
+//
+// Gated on a connected clip as well as on a running mode: holding a patient's
+// screen awake with nothing paired is battery spent for nothing.
+function syncWakeLock() {
+  const running = state.mode === MODE.RHYTHMIC ? state.rhythmOn
+                : state.mode === MODE.FEEDBACK ? state.feedbackOn
+                : false;
+  if (running && state.clips.length) acquireWakeLock();
+  else releaseWakeLock();
+}
+
 // The lock is dropped whenever the page is hidden and is not restored
 // automatically — re-take it when the patient comes back to the tab.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && state.rhythmOn) acquireWakeLock();
+  if (document.visibilityState === 'visible') syncWakeLock();
 });
 
 function startRhythm() {
@@ -1116,7 +1460,7 @@ function startRhythm() {
   $('rhythmBtn').textContent = 'Stopp';
   $('rhythmBtn').classList.add('stop');
   $('rhythmBtn').classList.remove('start');
-  acquireWakeLock();
+  syncWakeLock();
   armBeat(true);
   startResync();
   state.timer = setTimeout(rhythmTick, lead);
@@ -1136,7 +1480,7 @@ function stopRhythm() {
   $('rhythmBtn').textContent = 'Start';
   $('rhythmBtn').classList.remove('stop');
   $('rhythmBtn').classList.add('start');
-  releaseWakeLock();
+  syncWakeLock();
 }
 
 // A tempo change mid-run re-anchors from now, so the new interval takes
@@ -1160,7 +1504,45 @@ function reanchorRhythm() {
 }
 
 // ---- Rendering -----------------------------------------------------
+
+// Akkustand des Clips, so wie ihn die LED zeigt: >= 40 % grün, >= 15 % gelb,
+// darunter orange — die Schwellen stehen in src/config.h. Leer, solange der
+// Clip nichts gemeldet hat (ältere Firmware oder noch nicht gemessen).
+const BATT_YELLOW = 40;
+const BATT_ORANGE = 15;
+// Welche der drei Betriebsfarben die LED eines Clips gerade zeigt, abgeleitet
+// aus dem gemeldeten Akkustand — mit denselben Schwellen, nach denen der Clip
+// seine Farbe wählt (BATTERY_PCT_GREEN_MIN / _YELLOW_MIN in src/config.h).
+// null, solange der Clip nichts gemeldet hat.
+const ledStateFor = c => (c.batt == null ? null
+                        : c.batt >= BATT_YELLOW ? 'ok'
+                        : c.batt >= BATT_ORANGE ? 'low' : 'crit');
+
+// Markiert in der Legende die Zeile, die für die verbundenen Clips gerade
+// gilt. Nur die drei Betriebszeilen sind erreichbar: lädt ein Clip, ist er
+// gar nicht verbunden (am Kabel startet die Gangpipeline nicht), und beim
+// Einschalten oder im Fehlerfall ebenso wenig.
+function renderLedLegend() {
+  const marks = { ok: [], low: [], crit: [] };
+  for (const c of state.clips) {
+    const st = ledStateFor(c);
+    if (st) marks[st].push(c.side === 'L' ? 'links' : 'rechts');
+  }
+  for (const tr of document.querySelectorAll('#ledHelp tr[data-led]')) {
+    const who = marks[tr.dataset.led] || [];
+    tr.classList.toggle('now', who.length > 0);
+    tr.querySelector('.who').textContent = who.length ? '\u25C0 ' + who.join(' + ') : '';
+  }
+}
+
+const battLabel = c => (c.batt == null ? '' : ` · ${c.batt} %`);
+const battLow = c => c.batt != null && c.batt < BATT_ORANGE;
+
 function renderClips() {
+  // Before the early return below, not after it: losing the last clip is
+  // exactly the case that has to drop the wake lock, and that path returns.
+  syncWakeLock();
+
   const box = $('clips');
   box.innerHTML = '';
   if (!state.clips.length) {
@@ -1171,7 +1553,7 @@ function renderClips() {
     const el = document.createElement('span');
     el.className = 'chip';
     el.dataset.side = c.side;
-    el.innerHTML = `<span class="dot"></span>${c.side === 'L' ? 'Links' : 'Rechts'}`;
+    el.innerHTML = `<span class="dot"></span>${c.side === 'L' ? 'Links' : 'Rechts'}${battLabel(c)}`;
     const x = document.createElement('button');
     x.textContent = '✕';
     x.onclick = () => disconnectClip(c);
@@ -1185,7 +1567,19 @@ function renderClips() {
     hint.textContent = `Nur eine Seite verbunden — ${only} Schläge bleiben stumm.`;
     box.appendChild(hint);
   }
+  // Same statement the orange LED makes, in words: the clip switches itself
+  // off when the cell runs out, so this has to be readable before it does.
+  const low = state.clips.filter(battLow)
+                         .map(c => (c.side === 'L' ? 'links' : 'rechts'));
+  if (low.length) {
+    const hint = document.createElement('span');
+    hint.className = 'hint';
+    hint.textContent = `Akku fast leer (${low.join(' + ')}) — bitte laden, `
+                     + 'sonst schaltet sich der Clip ab.';
+    box.appendChild(hint);
+  }
   renderBeatSource();
+  renderLedLegend();
 }
 
 // Reports which side is timing the beat, and names any clip whose firmware
@@ -1269,7 +1663,16 @@ $('feedbackBtn').addEventListener('click', () => setFeedbackOn(!state.feedbackOn
 // Catches midnight while the page sits open with nobody walking — the
 // per-step check alone would leave yesterday's score on screen until the
 // next step arrives.
-setInterval(() => { if (rollOverDay()) renderScore(); }, 60000);
+setInterval(() => {
+  // Stand die Auswahl auf "heute", wandert sie mit — sie war ja nie eine
+  // Auswahl, sondern der Vorgabewert.
+  const wasToday = calSel === today;
+  if (rollOverDay()) {
+    if (wasToday) calSel = today;
+    renderScore();
+    renderCalendar();
+  }
+}, 60000);
 
 // Missing logo file → show the word instead of a broken image.
 const logoEl = $('logo');
@@ -1279,17 +1682,79 @@ if (logoEl) logoEl.addEventListener('error', () => {
   if (w) w.hidden = false;
 });
 
+// ---- Freigabe des Test-Abschnitts: 7× auf den Schriftzug ----------------
+// Warum überhaupt versteckt: siehe der Kommentar über #advanced im Markup.
+// Der Zähler sitzt auf dem Logo, weil das das einzige Element der Kopfzeile
+// ist, das im normalen Betrieb niemand berühren muss — der Verbinden-Knopf
+// und jeder Regler darunter werden wiederholt getippt, ein Zähler auf einem
+// davon würde den Abschnitt früher oder später aus Versehen öffnen.
+const UNLOCK_TAPS   = 7;
+const UNLOCK_GAP_MS = 3000;   // größere Pause = die Zählung fängt von vorne an
+let unlockTaps = 0;
+let unlockLastMs = 0;
+let unlockHintTimer = 0;
+
+function showUnlockHint(text) {
+  const el = $('unlockHint');
+  if (!el) return;
+  el.textContent = text;
+  el.hidden = false;
+  clearTimeout(unlockHintTimer);
+  unlockHintTimer = setTimeout(() => { el.hidden = true; }, 1800);
+}
+
+function setAdvancedVisible(on) {
+  const adv = $('advanced');
+  if (!adv) return;
+  adv.hidden = !on;
+  if (on) adv.open = true;   // aufgeklappt: wer die Geste kennt, will hinein
+  unlockTaps = 0;
+}
+
+function onBrandTap() {
+  const adv = $('advanced');
+  if (adv && !adv.hidden) return;   // schon offen — nichts zu zählen
+
+  const now = Date.now();
+  unlockTaps = (now - unlockLastMs > UNLOCK_GAP_MS) ? 1 : unlockTaps + 1;
+  unlockLastMs = now;
+
+  if (unlockTaps >= UNLOCK_TAPS) {
+    setAdvancedVisible(true);
+    showUnlockHint('Erweiterte Einstellungen sichtbar');
+    return;
+  }
+  // Die ersten drei bleiben stumm: darunter ist ein Tipper plausibel ein
+  // Versehen, und ein Zähler, der schon den ersten beantwortet, verschenkt
+  // die Geste an jeden, der das Logo streift.
+  if (unlockTaps >= 4) showUnlockHint(`Noch ${UNLOCK_TAPS - unlockTaps}×`);
+}
+
+// Beide, weil der Schriftzug das Bild ersetzt, wenn die Logodatei fehlt.
+for (const id of ['logo', 'wordmark']) {
+  const el = $(id);
+  if (el) el.addEventListener('click', onBrandTap);
+}
+
+const relockBtn = $('relockBtn');
+if (relockBtn) relockBtn.addEventListener('click', () => {
+  setAdvancedVisible(false);
+  showUnlockHint('Erweiterte Einstellungen ausgeblendet');
+});
+
 loadActivity();
 syncUiFromState();
 renderFeedbackBtn();
 renderClips();
 renderBlock();
+wireCalendar();
+renderCalendar();
 renderScore();
 </script>
 <script>
-// Zweiter der beiden Zusatzblöcke (siehe Kommentar im <head>): der Service
-// Worker macht die App offline-startfähig. Nur unter http(s) — unter file://
-// gibt es keinen Worker, und dort soll die Seite unverändert weiterlaufen.
+// Zweiter der beiden Zusatzblöcke (siehe head.html): der Service Worker macht
+// die App offline-startfähig. Nur unter http(s) — unter file:// gibt es keinen
+// Worker, und dort soll die Seite unverändert weiterlaufen.
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch((e) => console.warn('SW:', e));
