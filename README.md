@@ -2,14 +2,12 @@
 
 Die Web-Bluetooth-App für den novapace Clip:
 
-**https://novapace.github.io/clip-app/**
+**https://app.novapace.de/**
 
-> **Umzug auf `https://app.novapace.de/` ist vorbereitet, aber noch nicht
-> aktiv.** Der Build erzeugt bereits eine `CNAME`-Datei; sie liegt hier noch
-> nicht im Repo. Sobald am DNS ein `CNAME`-Eintrag `app` → `novapace.github.io`
-> steht, wird sie mit eingecheckt — Pages liefert dann unter der Subdomain aus
-> und leitet die Adresse oben dorthin weiter. Vorher einchecken hieße: die alte
-> Adresse leitet auf einen Namen weiter, den es noch nicht gibt.
+> Die frühere Adresse `novapace.github.io/clip-app/` leitet dauerhaft hierher
+> um (301) — schon installierte Telefone laufen also weiter. Am DNS steht
+> dazu ein `CNAME`-Eintrag `app` → `novapace.github.io`; er liegt bei Strato,
+> wo die Domain `novapace.de` geführt wird.
 
 > **Dieses Repo wird nicht von Hand gepflegt.** Alle Dateien außer dieser
 > README sind **gebaut**: Quelle ist `tools/client_app.html` im Firmware-Repo
@@ -22,7 +20,7 @@ Web Bluetooth gibt es nur in Chromium-Browsern und nur in einem **Secure
 Context**. Pages liefert über `https://` aus — damit ist die Bedingung ohne
 Tunnel, Zertifikat oder Port-Forwarding erfüllt.
 
-Die künftige Adresse ist bewusst eine Subdomain und kein Unterverzeichnis von
+Die Adresse ist bewusst eine Subdomain und kein Unterverzeichnis von
 `novapace.de`: Pages belegt immer einen ganzen Host, `novapace.de/app` ginge
 also gar nicht, ohne die Website mit umzuziehen. So hängt die Patienten-Adresse
 an nichts — die WordPress-Seite kann umgebaut oder ersetzt werden, ohne sie zu
@@ -70,7 +68,7 @@ sie ist ein Werkzeug für die Werkbank, nicht für Patienten
 | `manifest.webmanifest` | macht die Seite installierbar (Name, Icons, Farben) |
 | `sw.js` | Service Worker: Offline-Start; `CACHE` ist ein Inhalts-Hash aus dem Build |
 | `icon-192.png`, `icon-512.png`, `icon-maskable-512.png` | Icons für den Startbildschirm |
-| `CNAME` | die Subdomain, unter der Pages ausliefert — noch nicht eingecheckt, s. o. |
+| `CNAME` | die Subdomain, unter der Pages ausliefert — ohne sie bricht die Adresse |
 | `.nojekyll` | schaltet die Jekyll-Verarbeitung von Pages ab |
 
 ## Veröffentlichen
