@@ -39,6 +39,12 @@
     --score: #4f9a4b;
   }
   * { box-sizing: border-box; }
+  /* Muss sein, und zwar mit !important. Das hidden-Attribut wirkt nur ueber
+     das Browser-Stylesheet, und jede eigene display-Regel schlaegt es: die
+     beiden Vibrations-Schalter im Kartenkopf standen beide da, weil
+     .switchrow display:flex setzt. Wer hier eine Klasse mit display anlegt,
+     die irgendwo auch hidden traegt, faellt sonst wieder darauf herein. */
+  [hidden] { display: none !important; }
   html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg);
                font-family: -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
   body { display: flex; flex-direction: column; }
@@ -102,8 +108,18 @@
      schmalen Telefon nicht in eine Zeile passen — dann rutscht der Schalter
      darunter, statt dass etwas abgeschnitten wird. */
   .cardhead { display: flex; align-items: center; justify-content: space-between;
-              flex-wrap: wrap; gap: 8px 14px; margin-bottom: 12px; }
+              flex-wrap: wrap; gap: 8px 12px; margin-bottom: 12px; }
   .cardhead > h2 { margin: 0; }
+  /* Im Kopf kompakter als ein freistehender Schalter waere: er teilt sich die
+     Zeile mit der Ueberschrift. Ausgerechnet fuer 360 px Breite —
+     „STEUERUNG" + „Vibration" + Schalter + „an" passen in voller Groesse
+     nicht nebeneinander, und die Zeile bricht dann um. */
+  .cardhead .switchrow { gap: 10px; }
+  .cardhead .switchrow .lbl   { font-size: 17px; }
+  .cardhead .switchrow .state { font-size: 17px; min-width: 2.2em; }
+  .cardhead .sw { width: 60px; height: 34px; }
+  .cardhead .sw .knob { width: 26px; height: 26px; }
+  .cardhead .sw[aria-checked="true"] .knob { transform: translateX(26px); }
 
   /* ---- Aktivitätsscore ---- */
   /* --panel is only a shade off white, so the cards carry a border as well
