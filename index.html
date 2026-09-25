@@ -41,6 +41,7 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--fg);
                font-family: -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+  body { display: flex; flex-direction: column; }
   /* The bar is white like the page; what sets it apart is the rule beneath
      it, which runs teal→green — the logo's own gradient. The logo is those
      two colours on a transparent ground, and on white the teal half sits at
@@ -50,77 +51,153 @@
   header { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: var(--bar);
            border-bottom: 2px solid;
            border-image: linear-gradient(90deg, var(--brand), var(--brand-lt)) 1; }
-  header h1 { font-size: 16px; margin: 0; font-weight: 600; flex: 1; color: var(--accent); }
+  header h1 { font-size: 20px; margin: 0; font-weight: 600; flex: 1; color: var(--accent); }
   /* The wordmark carries its own colours, so it gets breathing room rather
      than a background plate. flex:1 lets it take the space the <h1> used to;
      object-position keeps it left while the image itself stays inside its box
      on narrow phones. */
   header #logo { height: 26px; width: auto; max-width: 55%; flex: 1;
                  object-fit: contain; object-position: left center; }
-  #status { font-size: 13px; color: var(--dim); }
+  #status { font-size: 16px; color: var(--dim); }
   #status.ok { color: var(--accent); }
   /* --vib is the beat flash, not an ink: 3.5:1 on white. --stop is the
      same red darkened until 13 px of it is legible. */
   #status.bad { color: var(--stop); }
-  button { background: var(--accent); color: white; border: none; padding: 9px 16px; border-radius: 6px;
-           font-size: 14px; font-weight: 600; cursor: pointer; }
+  /* Groesser als ueblich, und das ist der Punkt: die App wird von Menschen
+     bedient, deren Augen und Finger nicht mehr die eines Entwicklers sind.
+     44 px ist die uebliche Mindestgroesse einer Tippflaeche; hier liegt alles
+     darueber. */
+  button { background: var(--accent); color: white; border: none; padding: 13px 18px; border-radius: 8px;
+           font-size: 18px; font-weight: 600; cursor: pointer; }
   button:disabled { opacity: 0.4; cursor: default; }
   button.secondary { background: var(--muted); color: var(--fg); }
-  main { padding: 8px; display: flex; flex-direction: column; gap: 8px; height: calc(100vh - 49px); overflow-y: auto; }
+  /* Die Hoehe kam frueher aus calc(100vh - 49px). Diese 49 stimmen nicht
+     mehr: die Kopfzeile ist mit der groesseren Schrift gewachsen und waechst
+     weiter mit, wenn jemand im System eine groessere Schrift einstellt. main
+     nimmt sich jetzt, was die Kopfzeile uebrig laesst, statt eine Zahl zu
+     glauben. */
+  main { padding: 10px; display: flex; flex-direction: column; gap: 12px;
+         flex: 1; min-height: 0; overflow-y: auto; }
+
+  /* ---- Die drei Bereiche ----------------------------------------------
+     Aktivitaetsscore, Steuerung, Verlauf. Vorher war der Kalender ein
+     Anhaengsel INNERHALB der Steuerkarte und wurde beim Moduswechsel
+     mitgeschoben; jetzt ist jeder Bereich eine eigene Karte mit eigener
+     Ueberschrift, und der Verlauf steht in beiden Modi an derselben Stelle.
+     Die Trennung traegt die Karte selbst, nicht eine Linie zwischen zwei
+     Abschnitten: ein Rand mit Abstand darum herum ist auch dann noch als
+     Grenze zu sehen, wenn die Seite ueberflogen wird. */
+  .card { background: var(--panel); border: 1px solid var(--grid); border-radius: 10px;
+          padding: 14px 12px; }
+  .card > h2 { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: var(--dim);
+               text-transform: uppercase; letter-spacing: 0.6px; }
 
   /* ---- Aktivitätsscore ---- */
   /* --panel is only a shade off white, so the cards carry a border as well
      — without it they dissolve into the page. */
-  .score { background: var(--panel); border: 1px solid var(--grid); border-radius: 8px; padding: 14px 10px;
-           display: flex; flex-direction: column; align-items: center; gap: 6px; }
-  .score .lbl { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
-  .ring { width: 148px; height: 148px; position: relative; }
+  .score { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .score .lbl { font-size: 15px; color: var(--dim); text-transform: uppercase; letter-spacing: 0.5px; }
+  .ring { width: 164px; height: 164px; position: relative; }
   .ring svg { width: 100%; height: 100%; display: block; transform: rotate(-90deg); }
   .ring .track { fill: none; stroke: var(--track); stroke-width: 12; }
   .ring .arc   { fill: none; stroke: var(--score); stroke-width: 12; stroke-linecap: round;
                  transition: stroke-dashoffset 0.3s ease; }
   .ring .num { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
-               font-size: 34px; font-weight: 600; letter-spacing: -1px; }
-  .score .sub { font-size: 12px; color: var(--dim); text-align: center; }
+               font-size: 40px; font-weight: 600; letter-spacing: -1px; }
+  .score .sub { font-size: 15px; color: var(--dim); text-align: center; }
 
   /* ---- control panel ---- */
-  .ctl { background: var(--panel); border: 1px solid var(--grid); border-radius: 8px; padding: 10px;
-         display: flex; flex-direction: column; gap: 10px; }
+  .ctl { display: flex; flex-direction: column; gap: 14px; }
   .clips { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
   .chip { display: flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--grid);
-          border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 13px; font-weight: 600; }
+          border-radius: 999px; padding: 6px 8px 6px 14px; font-size: 16px; font-weight: 600; }
   .chip .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--score); }
+  /* ---- Akkusymbol -----------------------------------------------------
+     Fünf Kammern statt einer Prozentzahl, gezeichnet als Inline-SVG: die
+     Kammern müssen einzeln einfärbbar sein, und ein Zeichen aus einer Schrift
+     wäre auf jedem Telefon ein anderes. Rot wird das Symbol nicht nach einer
+     eigenen Schwelle, sondern nach genau der, die auch den Satz „Akku fast
+     leer …" unter den Chips auslöst — zwei Schwellen wären zwei Aussagen,
+     und die eine würde irgendwann der anderen widersprechen. */
+  .chip .batt { flex: none; display: block; }
+  .chip .batt .shell { fill: none; stroke: var(--dim); stroke-width: 1.2; }
+  .chip .batt .cap   { fill: var(--dim); }
+  .chip .batt .cell  { fill: none; }
+  .chip .batt .cell.on { fill: var(--score); }
+  .chip .batt.low .shell   { stroke: var(--stop); }
+  .chip .batt.low .cap     { fill: var(--stop); }
+  .chip .batt.low .cell.on { fill: var(--stop); }
   .chip.beat .dot { background: var(--vib); box-shadow: 0 0 8px var(--vib); }
-  .chip button { padding: 2px 8px; font-size: 12px; border-radius: 999px; background: var(--muted);
+  .chip button { padding: 4px 12px; font-size: 15px; border-radius: 999px; background: var(--muted);
                  color: var(--fg); }
-  .hint { font-size: 12px; color: var(--dim); }
+  .hint { font-size: 15px; color: var(--dim); line-height: 1.45; }
 
   /* Block banner. Hidden entirely while nothing is holding the vibration
      back, so its presence alone is the signal — a permanently visible
      "nichts geblockt" line would be read past within a minute. */
-  .block { display: none; white-space: pre-line; font-size: 13px; font-weight: 600;
+  .block { display: none; white-space: pre-line; font-size: 16px; font-weight: 600;
            color: var(--h); background: #fff7e6; border: 1px solid #f0d9a3;
            border-radius: 6px; padding: 8px 10px; }
   .block.on { display: block; }
 
   .modes { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-  .modes button { background: var(--muted); color: var(--fg); padding: 10px 4px; font-size: 13px; }
+  .modes button { background: var(--muted); color: var(--fg); padding: 14px 6px; font-size: 17px; }
   .modes button.active { background: var(--accent); color: #fff; }
 
   .panel { display: none; flex-direction: column; gap: 10px; }
   .panel.active { display: flex; }
 
   .slider { display: flex; flex-direction: column; gap: 4px; }
-  .slider .head { display: flex; justify-content: space-between; font-size: 12px; color: var(--dim);
-                  text-transform: uppercase; letter-spacing: 0.5px; }
-  .slider .head b { color: var(--fg); font-size: 14px; }
+  .slider .head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px;
+                  font-size: 15px; color: var(--dim); letter-spacing: 0.3px; }
+  .slider .head b { color: var(--fg); font-size: 19px; }
   /* The pure brand teal shows up here rather than on the buttons: a filled
      track carries no label, so it has nothing to stay readable against. */
-  input[type=range] { width: 100%; accent-color: var(--brand); height: 28px; }
+  input[type=range] { width: 100%; accent-color: var(--brand); height: 36px; }
+
+  /* ---- Regler mit Tasten ----------------------------------------------
+     Der Schieber allein ist die schwerste Bedienform dieser App: treffen,
+     halten und auf wenigen Millimetern wieder loslassen — genau das, was
+     zittrige oder steife Finger nicht gut koennen. Die Tasten daneben machen
+     dieselbe Einstellung in Einzelschritten erreichbar; der Schieber bleibt
+     fuer alle, die schnell weit wollen.
+     Sie setzen den Wert NICHT selbst, sondern loesen am Schieber ein
+     input-Ereignis aus. Damit haengt alles Weitere — senden, entprellen,
+     Nachbarregler nachziehen — weiter an genau einem Handler pro Regler und
+     kann nicht auseinanderlaufen. */
+  .slider .row { display: flex; align-items: center; gap: 12px; }
+  .slider .row input[type=range] { flex: 1; width: auto; }
+  .nudge { flex: none; width: 58px; height: 58px; padding: 0; border-radius: 10px;
+           background: var(--muted); color: var(--fg);
+           font-size: 30px; font-weight: 700; line-height: 1; }
+
+  /* ---- Schalter „Vibration" -------------------------------------------
+     Ein Schalter statt eines Knopfes, der mal „Start" und mal „Stopp" heisst.
+     Der Knopf zeigte, was beim Druecken PASSIEREN wuerde, und liess den Leser
+     selbst darauf schliessen, was gerade IST — ein Umweg, den man mit
+     Routine nicht mehr bemerkt und ohne sie jedes Mal geht. Der Schalter
+     zeigt den Zustand.
+     Das Wort daneben ist nicht schmueckend: Farbe und Stellung allein sind
+     fuer rot-gruen-schwache Augen und bei Sonne auf dem Display zu wenig. */
+  .switchrow { display: flex; align-items: center; gap: 14px; }
+  .switchrow .lbl { flex: 1; font-size: 19px; font-weight: 600; }
+  .switchrow .state { font-size: 18px; font-weight: 700; color: var(--dim);
+                      min-width: 2.6em; text-align: right; }
+  .switchrow .state.on { color: var(--accent); }
+  .sw { flex: none; width: 78px; height: 44px; border-radius: 999px; padding: 0;
+        background: var(--track); position: relative; transition: background 0.15s ease; }
+  .sw .knob { position: absolute; top: 4px; left: 4px; width: 36px; height: 36px;
+              border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+              transition: transform 0.15s ease; }
+  .sw[aria-checked="true"] { background: var(--accent); }
+  .sw[aria-checked="true"] .knob { transform: translateX(34px); }
+  @media (prefers-reduced-motion: reduce) {
+    .sw, .sw .knob { transition: none; }
+  }
 
   .btnrow { display: flex; gap: 8px; }
   .btnrow button { flex: 1; }
-  .big { padding: 14px 8px; font-size: 15px; }
+  .big { padding: 18px 10px; font-size: 20px; }
   /* Dark ink on the light green: white on rgb(142,198,139) is barely
      readable at this weight, and these are the two buttons a patient has
      to hit without looking closely. Same reason for the deeper red on Stopp —
@@ -131,7 +208,7 @@
 
   /* Test-phase section — see the comment above #advanced in the markup. */
   details.adv { border-top: 1px solid var(--grid); padding-top: 8px; }
-  details.adv summary { font-size: 13px; color: var(--dim); cursor: pointer; padding: 4px 0;
+  details.adv summary { font-size: 15px; color: var(--dim); cursor: pointer; padding: 4px 0;
                         list-style: none; }
   details.adv summary::-webkit-details-marker { display: none; }
   details.adv summary::before { content: '▸ '; }
@@ -144,9 +221,36 @@
                                    -webkit-user-select: none; user-select: none; }
   /* Eigene Zeile statt Overlay: die Rückmeldung darf nichts verdecken, und
      sie räumt sich nach kurzer Zeit selbst weg. */
-  .unlock { font-size: 12px; color: var(--dim); text-align: center; padding-top: 2px; }
+  .unlock { font-size: 15px; color: var(--dim); text-align: center; padding-top: 2px; }
   details.adv .relock { align-self: flex-start; background: none; padding: 2px 0;
-                        color: var(--dim); font-size: 12px; text-decoration: underline; }
+                        color: var(--dim); font-size: 15px; text-decoration: underline; }
+
+  /* ---- Hilfe „Warum vibriert meine Einlegesohle?" ----------------------
+     Ein echter Knopf und bewusst KEIN <details>: direkt daneben sitzt eines
+     (die erweiterten Einstellungen), und die beiden dürfen sich nicht
+     gleichen — hinter dem einen stehen Therapieparameter, hinter dem anderen
+     drei Sätze Erklärung. Deshalb hier das Fragezeichen als Marke statt des
+     ▸ und ein ruhiger Grundton statt einer Handlungsfarbe: die Antwort ist
+     zum Lesen da, nicht zum Tun. Die Beschriftung ist die Frage selbst, in
+     der Form, in der der Patient sie sich stellt.
+     Die Antwort steht in --bg (Weiß) auf der Karte in --panel: eine hellere
+     Fläche als ihre Umgebung liest sich als Zettel, und genau das ist sie. */
+  /* Ein-/Aus-Schalter zwischen den Reglern: gedämpft, solange er nichts tut,
+     in der Handlungsfarbe, sobald er etwas tut — dieselbe Logik wie bei den
+     Modusknöpfen. „Aus" muss aussehen wie „hier passiert nichts". */
+  button.toggle { background: var(--muted); color: var(--fg); }
+  button.toggle.on { background: var(--accent); color: #fff; }
+
+  .help { display: flex; flex-direction: column; gap: 8px; }
+  .help .ask { display: flex; align-items: center; gap: 10px; width: 100%;
+               background: var(--muted); color: var(--fg); text-align: left;
+               font-size: 17px; padding: 14px 14px; }
+  .help .ask .q { flex: none; width: 28px; height: 28px; border-radius: 50%;
+                  background: var(--accent); color: #fff; font-size: 18px;
+                  display: flex; align-items: center; justify-content: center; }
+  .help .answer { margin: 0; background: var(--bg); border: 1px solid var(--grid);
+                  border-radius: 6px; padding: 10px 12px;
+                  font-size: 17px; line-height: 1.55; color: var(--fg); }
 
   /* ---- Monatskalender -------------------------------------------------
      Steht unter beiden Modus-Panels: der Verlauf ist dieselbe Aussage, egal
@@ -155,14 +259,22 @@
      und soll nichts umhängen müssen —, gerendert aus einem einzigen Zustand
      (calYear/calMonth/calSel), sodass sie gar nicht auseinanderlaufen
      können. */
-  .cal { border-top: 1px solid var(--grid); padding-top: 10px;
-         display: flex; flex-direction: column; gap: 8px; }
+  /* Zugeklappt per Vorgabe: der Verlauf ist zum Nachschauen da, nicht zum
+     Bedienen, und aufgeklappt schiebt er die Regler aus dem Bild. Das
+     <details> ist die Karte SELBST, nicht ihr Inhalt — renderCalendar()
+     schreibt nur .cal-body neu, und das offen/zu bleibt dabei stehen. */
+  details.cal > summary { list-style: none; cursor: pointer; display: flex; align-items: center;
+                          gap: 10px; font-size: 19px; font-weight: 700; padding: 2px 0; }
+  details.cal > summary::-webkit-details-marker { display: none; }
+  details.cal > summary::before { content: '\25B8'; color: var(--dim); font-size: 22px; }
+  details.cal[open] > summary::before { content: '\25BE'; }
+  .cal-body { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; }
   .cal-head { display: flex; align-items: center; gap: 6px; }
-  .cal-title { flex: 1; font-size: 15px; font-weight: 600; }
-  .cal-nav { background: var(--muted); color: var(--fg); padding: 4px 14px; font-size: 16px;
+  .cal-title { flex: 1; font-size: 19px; font-weight: 600; }
+  .cal-nav { background: var(--muted); color: var(--fg); padding: 6px 18px; font-size: 24px;
              line-height: 1.2; }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-  .cal-wd { text-align: center; font-size: 11px; color: var(--dim);
+  .cal-wd { text-align: center; font-size: 14px; color: var(--dim);
             text-transform: uppercase; letter-spacing: 0.5px; padding-bottom: 2px; }
   /* Rahmen immer, Füllung nur so kräftig wie der Score. 0 % ist deshalb
      wirklich durchsichtig und nicht "sehr blasses Grün": ein Tag ohne
@@ -170,17 +282,22 @@
      unterscheiden lassen — das ist der Unterschied zwischen "nicht getragen"
      und "kaum gelaufen", und den darf die Kachel nicht einebnen. */
   .cal-day { background: transparent; border: 1px solid var(--cell); border-radius: 6px;
-             color: var(--fg); font-size: 13px; font-weight: 600; padding: 0; height: 34px; }
+             color: var(--fg); font-size: 17px; font-weight: 600; padding: 0; height: 46px; }
   /* Die Füllung geht von weiß nach Grün, dunkle Schrift trägt also über den
      ganzen Bereich — anders als auf dunklem Grund, wo die schwachen Kacheln
      helle und die kräftigen dunkle Schrift brauchten. Die Umschaltung bleibt
      trotzdem: sie hält die kräftigsten Kacheln auf der dunkelsten Tinte, und
      mit ihr die Kalender-Logik unverändert. */
   .cal-day.ink { color: #12240f; }
+  /* „Los geht's" statt „0 %": am Morgen jedes Tages waere die Null die erste
+     Aussage der App ueber den Patienten, und eine Null ist da keine Messung,
+     sondern eine Entmutigung. Kleiner gesetzt, weil der Satz breiter ist als
+     die Zahl, die sonst dort steht. */
+  .ring .num.go { font-size: 25px; letter-spacing: 0; }
   .cal-day.other { border-color: transparent; color: var(--dim); background: transparent; }
   .cal-day.today { border-color: var(--brand); }
   .cal-day.sel { box-shadow: 0 0 0 2px var(--fg); }
-  .cal-read { font-size: 12px; color: var(--dim); min-height: 16px; }
+  .cal-read { font-size: 16px; color: var(--dim); min-height: 20px; }
   .cal-read b { color: var(--fg); }
 </style>
 <!-- ─── Ergänzungen gegenüber tools/client_app.html ────────────────────────────
@@ -214,18 +331,19 @@
        beim ersten erscheint, verrät die Geste an jeden, der das Logo streift. -->
   <div class="unlock" id="unlockHint" hidden></div>
 
-  <div class="score">
+  <section class="card score">
     <div class="lbl">Aktivitätsscore</div>
     <div class="ring">
       <svg viewBox="0 0 100 100">
         <circle class="track" cx="50" cy="50" r="42"></circle>
         <circle class="arc" id="scoreArc" cx="50" cy="50" r="42"></circle>
       </svg>
-      <div class="num" id="scoreNum">0 %</div>
+      <div class="num go" id="scoreNum">Los geht's</div>
     </div>
-  </div>
+  </section>
 
-  <div class="ctl">
+  <section class="card ctl">
+    <h2>Steuerung</h2>
     <div class="clips" id="clips"><span class="hint">Kein Clip verbunden.</span></div>
     <div class="modes">
       <button data-mode="0" class="active">Feedbackmodus</button>
@@ -234,15 +352,41 @@
 
     <!-- Mode 0 — marker feedback -->
     <div class="panel active" id="panel0">
+      <!-- Zuerst der Schalter, dann die Staerke: erst ob ueberhaupt, dann wie
+           viel. Frueher stand hier ein Knopf „Start"/„Stopp" — siehe
+           .switchrow im CSS, warum daraus ein Schalter wurde. -->
+      <div class="switchrow">
+        <span class="lbl" id="feedbackLbl">Vibration</span>
+        <button id="feedbackBtn" class="sw" role="switch" aria-checked="true"
+                aria-labelledby="feedbackLbl"><span class="knob"></span></button>
+        <span class="state on" id="feedbackState">an</span>
+      </div>
       <div class="slider">
         <div class="head"><span>Vibrationsstärke</span><b id="int0Val">7</b></div>
-        <input type="range" class="intensity" min="1" max="10" step="1" value="7">
+        <div class="row">
+          <button class="nudge" data-nudge="-1" aria-label="Vibrationsstärke verringern">−</button>
+          <input type="range" class="intensity" min="1" max="10" step="1" value="7">
+          <button class="nudge" data-nudge="1" aria-label="Vibrationsstärke erhöhen">+</button>
+        </div>
       </div>
-      <div class="btnrow"><button id="feedbackBtn" class="big stop">Stopp</button></div>
-      <div class="btnrow">
-        <button class="big" data-pulse="L">Links</button>
-        <button class="big" data-pulse="both">Beidseitig</button>
-        <button class="big" data-pulse="R">Rechts</button>
+
+      <!-- Steht bei den Bedienelementen und ausdrücklich NICHT im
+           Erweiterten-Block: die Frage stellt sich der Patient beim ersten
+           unerwarteten Impuls, und die Antwort muss dann ohne Geste und ohne
+           Therapeutin erreichbar sein. Zugeklappt, weil sie nach dem zweiten
+           Lesen nur noch Platz kostet. -->
+      <div class="help">
+        <button class="ask" id="whyBtn" aria-expanded="false" aria-controls="whyText">
+          <span class="q" aria-hidden="true">?</span>
+          Warum vibriert meine Einlegesohle?
+        </button>
+        <p class="answer" id="whyText" hidden>
+          Der Feedback-Modus gibt Ihnen Vibrationsrückmeldung bei kleiner werdenden
+          Bewegungsamplituden. Kommt die Vibration, ist dies eine Erinnerung daran, sich
+          wieder auf die korrekte Gangtechnik mit aufrechtem Oberkörper, Mitschwingen der
+          Arme, großen Schritten, hohem Anheben der Füße und Fersenauftritt zu
+          konzentrieren.
+        </p>
       </div>
 
       <!-- TEST-PHASE SECTION — everything inside this <details> is meant for
@@ -284,31 +428,58 @@
         </div>
       </details>
 
-      <!-- Monatsübersicht. Inhalt kommt komplett aus renderCalendar(); beide
-           Panels bekommen denselben Container, gefüllt aus demselben Zustand. -->
-      <section class="cal" aria-label="Monatsübersicht"></section>
     </div>
 
     <!-- Mode 1 — rhythmic cueing, timed by THIS device -->
     <div class="panel" id="panel1">
+      <!-- data-step="5" an den Tasten, nicht am Schieber: der Schieber behaelt
+           seine Schrittweite von 1 bpm, damit die Therapeutin genau treffen
+           kann. Eine Taste, die 1 bpm weiterschiebt, waere hier aber wirkungs-
+           los zu bedienen — 60 und 61 bpm ergeben beide „1 pro Sekunde", ein
+           Druck sieht also aus, als sei nichts passiert. -->
       <div class="slider">
-        <div class="head"><span>Frequenz (links + rechts)</span><b id="bpmVal">60 bpm</b></div>
-        <input type="range" id="bpm" min="20" max="240" step="1" value="60">
+        <div class="head"><span>Vibrationshäufigkeit</span><b id="bpmVal">1 pro Sekunde</b></div>
+        <div class="row">
+          <button class="nudge" data-nudge="-1" data-step="5" aria-label="Seltener vibrieren">−</button>
+          <input type="range" id="bpm" min="20" max="240" step="1" value="60">
+          <button class="nudge" data-nudge="1" data-step="5" aria-label="Häufiger vibrieren">+</button>
+        </div>
       </div>
       <div class="slider">
         <div class="head"><span>Vibrationsstärke</span><b id="int1Val">7</b></div>
-        <input type="range" class="intensity" min="1" max="10" step="1" value="7">
+        <div class="row">
+          <button class="nudge" data-nudge="-1" aria-label="Vibrationsstärke verringern">−</button>
+          <input type="range" class="intensity" min="1" max="10" step="1" value="7">
+          <button class="nudge" data-nudge="1" aria-label="Vibrationsstärke erhöhen">+</button>
+        </div>
       </div>
-      <div class="btnrow"><button id="rhythmBtn" class="big start">Start</button></div>
+      <!-- Klickton. Aus per Vorgabe: der Reiz, um den es in diesem Modus geht,
+           ist die Vibration, und ein Ton, den niemand bestellt hat, ist in
+           einer Praxis oder im Bus eine Zumutung. -->
       <div class="btnrow">
-        <button class="big" data-pulse="L">Links</button>
-        <button class="big" data-pulse="both">Beidseitig</button>
-        <button class="big" data-pulse="R">Rechts</button>
+        <button id="clickBtn" class="toggle" aria-pressed="false">Klickton: aus</button>
       </div>
-
-      <section class="cal" aria-label="Monatsübersicht"></section>
+      <!-- Derselbe Schalter wie im Feedbackmodus, an derselben Stelle und mit
+           derselben Beschriftung: in beiden Modi entscheidet er, ob der Clip
+           vibriert. Zwei Bedienformen fuer dieselbe Frage waeren zwei Dinge
+           zum Lernen, und gelernt wird hier ungern. -->
+      <div class="switchrow">
+        <span class="lbl" id="rhythmLbl">Vibration</span>
+        <button id="rhythmBtn" class="sw" role="switch" aria-checked="false"
+                aria-labelledby="rhythmLbl"><span class="knob"></span></button>
+        <span class="state" id="rhythmState">aus</span>
+      </div>
     </div>
-  </div>
+  </section>
+
+  <!-- Dritter Bereich. Steht ausserhalb der Modus-Panels, weil der Verlauf in
+       beiden Modi dieselbe Aussage macht — vorher lag in jedem Panel eine
+       eigene Kopie, die beim Moduswechsel mitgeschoben wurde. Zugeklappt per
+       Vorgabe: zum Nachschauen da, nicht zum Bedienen. -->
+  <details class="card cal" id="calCard">
+    <summary>Verlauf</summary>
+    <div class="cal-body"></div>
+  </details>
 
 </main>
 
@@ -355,6 +526,12 @@ const state = {
   anchor: 0,
   timer: null,
   resync: null,       // interval pulling the clips' phase back onto the anchor
+  // Klick-Spur, siehe weiter unten. Aus per Vorgabe und bewusst nicht
+  // gespeichert: der Ton soll nie eine Überraschung sein, die ein Telefon aus
+  // der vorigen Sitzung mitbringt.
+  clickOn: false,
+  clickTimer: null,   // Vorlauf-Planer der Klick-Spur
+  clickHalf: 0,       // nächster noch nicht eingetakteter Halbschlag
 };
 
 const $ = id => document.getElementById(id);
@@ -572,7 +749,17 @@ function renderScore() {
 
   // The number is not clamped — 120 % is a good day and should say so — but
   // the ring has nowhere to go past full.
-  $('scoreNum').textContent = Math.round(pct) + ' %';
+  //
+  // Unter 1 % steht kein Prozentwert, sondern „Los geht's". Sonst waere die
+  // erste Aussage der App an jedem Morgen eine Null ueber den Patienten, und
+  // die ist keine Messung, sondern eine Entmutigung. Auch der Fall „ein paar
+  // Meter gelaufen, rundet auf 0" faellt darunter — gerade er darf nicht wie
+  // Nichtstun aussehen. Gerechnet wird unveraendert weiter (pct und der Ring
+  // unten nehmen den echten Wert); nur die Beschriftung schweigt ueber die Null.
+  const num = $('scoreNum');
+  const shown = Math.round(pct);
+  num.textContent = shown > 0 ? shown + ' %' : "Los geht's";
+  num.classList.toggle('go', shown <= 0);
   const arc = $('scoreArc');
   arc.style.strokeDasharray = ARC_LEN;
   arc.style.strokeDashoffset = ARC_LEN * (1 - Math.min(1, Math.max(0, pct / 100)));
@@ -610,13 +797,20 @@ function calReadout() {
   const [y, m, d] = calSel.split('-').map(Number);
   const label = `${CAL_DAYNAMES[new Date(y, m - 1, d).getDay()]}, `
               + `${d}. ${CAL_MONTHS[m - 1]} ${y}`;
+  // Ein Strich statt einer Null, aus demselben Grund wie im Ring: ein Tag
+  // ohne Aufzeichnung und ein Tag mit sehr wenig Weg sind beide keine „0 %".
+  // dayScore() bleibt unveraendert — die Unterscheidung null/klein steckt
+  // weiterhin in der Farbe der Kachel, hier geht es nur um die Zeile darunter.
   const pct = dayScore(calSel);
-  return pct == null ? `${label} — <b>keine Aufzeichnung</b>`
-                     : `${label} — <b>${Math.round(pct)} %</b>`;
+  const shown = (pct == null || Math.round(pct) <= 0) ? '\u2013' : Math.round(pct) + ' %';
+  return `${label} — <b>${shown}</b>`;
 }
 
 function renderCalendar() {
-  const boxes = document.querySelectorAll('.cal');
+  // .cal-body, nicht .cal: die Klappe (offen/zu) haengt am <details> selbst,
+  // und das ueberlebt nur, wenn hier ausschliesslich sein Inneres neu
+  // geschrieben wird.
+  const boxes = document.querySelectorAll('.cal-body');
   if (!boxes.length) return;
 
   // getDay() zählt ab Sonntag; auf Montag-zuerst umrechnen.
@@ -726,7 +920,10 @@ async function sendCmd(clip, cmd, ack) {
 
 const broadcast = cmd => Promise.all(state.clips.map(c => sendCmd(c, cmd)));
 
-// "SR M0 C10 V07 B060 W8 R1 G1" — fixed offsets, see src/comms/ble.h.
+// "SR M0 C10 V07 B060 W8 R1 G1 F1" — fixed offsets, see src/comms/ble.h.
+// The F field is deliberately not read here: this app never lets the shuffle
+// override be switched off, so there is nothing to hydrate from it — it just
+// writes "F1" on connect (see pushSettings).
 //
 // The trailing fields were appended after clips had already been flashed, so
 // a status that stops short is an older firmware, not a corrupt read: fall
@@ -789,6 +986,7 @@ async function connect() {
       ctrlChar:    await service.getCharacteristic(CONTROL_UUID),
       lastSeq: -1, cutoff: state.cutoff, block: null, pulsePending: false,
       batt: null,       // Akku in %, aus dem Heartbeat-Frame (null = unbekannt)
+      battCells: null,  // zuletzt gezeigte Kammerzahl, für die Hysterese
       ownBeat: false,   // set from the status read in hydrate()
       lagMs: null,      // measured one-way trip for a control write
     };
@@ -869,6 +1067,13 @@ async function hydrate(clip) {
 async function pushSettings(clip) {
   await sendCmd(clip, 'W' + state.window);
   await sendCmd(clip, 'R' + state.refractory);
+  // Unconditionally on, and no switch anywhere in this app to turn it off.
+  // It is sent rather than assumed because the clip's shuffle switch is the
+  // one setting that is neither persisted nor reset on disconnect (see
+  // src/comms/ble.h): a clip the dev app left switched off would otherwise
+  // stay off for the patient who picks it up next, silently and with nothing
+  // on this screen to say so.
+  await sendCmd(clip, 'F1');
   await sendCmd(clip, 'C' + String(state.cutoff).padStart(2, '0'));
   await sendCmd(clip, 'V' + String(state.intensity).padStart(2, '0'));
   await sendCmd(clip, 'B' + String(state.bpm).padStart(3, '0'));
@@ -1067,14 +1272,19 @@ async function setMode(mode) {
   if (mode === MODE.RHYTHMIC && running) startRhythm();
 }
 
-// The Feedback panel's Start/Stopp. Purely a mode switch — unlike the
-// rhythm button there is no timer on this side, the clip does its own
-// marker timing.
+// Der Vibrations-Schalter des Feedback-Panels. Reiner Moduswechsel — anders
+// als beim Rhythmus laeuft auf dieser Seite kein Timer, der Clip macht sein
+// Marker-Timing selbst.
+//
+// role="switch" plus aria-checked statt eines Knopfes mit wechselnder
+// Beschriftung: vorgelesen heisst das „Vibration, Schalter, an" statt
+// „Stopp" — ein Zustand, keine Aufforderung.
 function renderFeedbackBtn() {
   const b = $('feedbackBtn');
-  b.textContent = state.feedbackOn ? 'Stopp' : 'Start';
-  b.classList.toggle('stop',  state.feedbackOn);
-  b.classList.toggle('start', !state.feedbackOn);
+  b.setAttribute('aria-checked', state.feedbackOn ? 'true' : 'false');
+  const st = $('feedbackState');
+  st.textContent = state.feedbackOn ? 'an' : 'aus';
+  st.classList.toggle('on', state.feedbackOn);
   // Runs on every feedback toggle AND on every mode switch (setMode calls it),
   // so it is the natural place to re-decide the wake lock for this side.
   syncWakeLock();
@@ -1091,10 +1301,41 @@ function renderRefractoryBtn() {
   b.classList.toggle('secondary', !state.refractory);
 }
 
+// Das Gegenstueck fuer den rhythmischen Modus. Getrennt von
+// renderFeedbackBtn(), weil die beiden Zustaende getrennt sind: der
+// Feedback-Schalter haengt an state.feedbackOn, dieser an state.rhythmOn, und
+// ein Moduswechsel darf den einen nicht fuer den anderen halten.
+//
+// Anders als beim Feedback wird hier NICHT syncWakeLock() mitgerufen:
+// startRhythm() und stopRhythm() tun das selbst, an der Stelle, an der sie
+// auch den Takt anwerfen oder abraeumen.
+function renderRhythmBtn() {
+  const b = $('rhythmBtn');
+  b.setAttribute('aria-checked', state.rhythmOn ? 'true' : 'false');
+  const st = $('rhythmState');
+  st.textContent = state.rhythmOn ? 'an' : 'aus';
+  st.classList.toggle('on', state.rhythmOn);
+}
+
 async function setFeedbackOn(on) {
   state.feedbackOn = on;
   renderFeedbackBtn();
   await pushMode();
+}
+
+// Wie oft es klopft, in Sekunden — nicht in bpm. „60 bpm" ist eine Einheit
+// aus der Musik und aus dem Labor; wie haeufig der Fuss einen Reiz bekommt,
+// steht darin nicht. Die Zahl zaehlt links und rechts zusammen, 60 bpm sind
+// also ein Reiz pro Sekunde.
+//
+// Nur die Beschriftung. Gerechnet, gespeichert und gesendet wird unveraendert
+// in bpm (state.bpm, "B" im Protokoll, siehe src/comms/ble.h) — die Anzeige
+// ist der einzige Ort, an dem die Einheit wechselt.
+function rhythmLabel(bpm) {
+  const num = v => (Math.round(v * 10) / 10).toString().replace('.', ',');
+  const perSec = bpm / 60;
+  return perSec >= 1 ? num(perSec) + ' pro Sekunde'
+                     : 'alle ' + num(60 / bpm) + ' Sekunden';
 }
 
 const pushCutoff    = debounce(v => broadcast('C' + String(v).padStart(2, '0')), 150);
@@ -1131,7 +1372,7 @@ function syncUiFromState() {
   $('cutoff').value = state.cutoff;
   $('cutoffVal').textContent = state.cutoff;
   $('bpm').value = state.bpm;
-  $('bpmVal').textContent = state.bpm + ' bpm';
+  $('bpmVal').textContent = rhythmLabel(state.bpm);
   document.querySelectorAll('.intensity').forEach(el => { el.value = state.intensity; });
   ['int0Val', 'int1Val'].forEach(id => { $(id).textContent = state.intensity; });
   state.clips.forEach(c => { c.cutoff = state.cutoff; });
@@ -1421,7 +1662,13 @@ function syncWakeLock() {
 // The lock is dropped whenever the page is hidden and is not restored
 // automatically — re-take it when the patient comes back to the tab.
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') syncWakeLock();
+  if (document.visibilityState === 'visible') {
+    syncWakeLock();
+    // Ein verdeckter Tab bekommt seinen AudioContext suspendiert; ohne das
+    // hier bliebe die Klick-Spur nach der Rückkehr stumm, während der Takt
+    // weiterläuft.
+    if (clickRunning()) audio();
+  }
 });
 
 function startRhythm() {
@@ -1432,12 +1679,11 @@ function startRhythm() {
   // lamp runs off the same anchor, so it stays in step with the clips.
   const lead = clipTimedBeat() ? BEAT_LEAD_MS : 0;
   state.anchor = performance.now() + lead;
-  $('rhythmBtn').textContent = 'Stopp';
-  $('rhythmBtn').classList.add('stop');
-  $('rhythmBtn').classList.remove('start');
+  renderRhythmBtn();
   syncWakeLock();
   armBeat(true);
   startResync();
+  startClicks();          // nach dem Anker: die Klicks hängen daran
   state.timer = setTimeout(rhythmTick, lead);
 }
 
@@ -1447,14 +1693,13 @@ function stopRhythm() {
   clearTimeout(state.timer);
   state.timer = null;
   stopResync();
+  stopClicks();
   // Unconditional: "GX" is a no-op on a clip that never started a beat, and
   // ignored outright by firmware that does not know the command — whereas a
   // beat left running because clipTimedBeat() had flipped in the meantime
   // would keep cueing a patient who pressed Stopp.
   broadcast('GX');
-  $('rhythmBtn').textContent = 'Start';
-  $('rhythmBtn').classList.remove('stop');
-  $('rhythmBtn').classList.add('start');
+  renderRhythmBtn();
   syncWakeLock();
 }
 
@@ -1476,6 +1721,146 @@ function reanchorRhythm() {
   const first = performance.now() + wait;
   state.anchor = first - state.beat * iv;
   state.timer = setTimeout(rhythmTick, wait);
+  resyncClicks();
+}
+
+// ---- Klick-Spur (nur im Rhythmus-Modus) ------------------------------
+//
+// Ein Klick GENAU zwischen zwei Vibrationen, also auf der Hälfte des
+// Schlagabstands. Der Reiz bleibt die Vibration; der Klick füllt die Lücke und
+// gibt dem Ohr, was der Fuß schon hat.
+//
+// Ist nur ein Clip verbunden, bliebe die Gegenseite stumm — und mit ihr die
+// Hälfte des Takts. Dort setzt ein ZWEITER, tieferer Klick ein, genau auf dem
+// Slot, auf dem der fehlende Clip vibriert hätte. Tiefer, damit hörbar bleibt,
+// was Ersatz ist und was Original: die hohen Klicks liegen ZWISCHEN den
+// Schritten, der tiefe liegt AUF einem.
+//
+// Geplant wird über die Audio-Uhr, nicht über setTimeout. Ein Klick, der um
+// 30 ms wandert, ist als Taktgeber wertlos — dieselbe Ungenauigkeit war der
+// Grund, den Vibrationstakt aus dem Telefon in den Clip zu verlegen (ble.h).
+// Ein Vorlauf-Planer taktet alle CLICK_TICK_MS die nächsten CLICK_LOOKAHEAD_MS
+// ein; die Klänge hängen dann an AudioContext.currentTime und liegen
+// sample-genau. Der Timer muss nur noch grob genug sein, um nicht auszusetzen.
+//
+// Der kurze Vorlauf hat einen zweiten Zweck: er ist auch die Zeit, die eine
+// Änderung der Lage braucht, um anzukommen. Verbindet sich der zweite Clip,
+// verschwindet sein Ersatzklick von selbst innerhalb einer knappen
+// Dritelsekunde — dafür braucht es keinen eigenen Draht von renderClips().
+const CLICK_TICK_MS      = 100;
+const CLICK_LOOKAHEAD_MS = 300;
+
+// Zwischen den Schritten hoch, als Ersatz für eine fehlende Seite eine Quinte
+// tiefer: verwandt genug, um als dieselbe Spur zu gelten, weit genug, um sie
+// beim Gehen nicht zu verwechseln.
+const CLICK_MID   = { freq: 1000, gain: 0.30 };
+const CLICK_GHOST = { freq:  660, gain: 0.26 };
+
+let audioCtx = null;
+// Was schon in der Audio-Uhr steht, aber noch nicht geklungen hat. Ein
+// eingetakteter Klang lässt sich nicht mehr verschieben, nur abbrechen — und
+// abbrechen muss man ihn bei Stopp oder Tempowechsel, sonst klickt es noch
+// eine Dritelsekunde im alten Takt weiter.
+let clickPending = [];
+
+// Erst bei einer echten Nutzergeste: ein AudioContext, der ohne sie entsteht,
+// startet suspendiert und bleibt es.
+function audio() {
+  if (!audioCtx) {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return null;
+    audioCtx = new AC();
+  }
+  if (audioCtx.state === 'suspended') audioCtx.resume().catch(() => {});
+  return audioCtx;
+}
+
+// Kurzer Klick: Dreieck mit sehr schneller Hüllkurve. Ein Rechteck wäre
+// schärfer, scheppert aber auf einem Telefonlautsprecher; ein Sinus ist zu
+// weich, um neben Schritten und Straße gehört zu werden.
+function playClick(at, tone) {
+  const ac  = audioCtx;
+  const osc = ac.createOscillator();
+  const amp = ac.createGain();
+  osc.type = 'triangle';
+  osc.frequency.setValueAtTime(tone.freq, at);
+  // Nicht bei 0 beginnen: aus 0 heraus kann exponentialRampToValueAtTime nicht
+  // rampen, die Hüllkurve bliebe stumm.
+  amp.gain.setValueAtTime(0.0001, at);
+  amp.gain.exponentialRampToValueAtTime(tone.gain, at + 0.002);
+  amp.gain.exponentialRampToValueAtTime(0.0001, at + 0.035);
+  osc.connect(amp).connect(ac.destination);
+  osc.start(at);
+  osc.stop(at + 0.05);
+  clickPending.push({ osc, at });
+}
+
+// Was auf Halbschlag h zu hören ist, oder null. Ungerade h liegen zwischen
+// zwei Schlägen, gerade auf einem: h/2 ist dann die Slotnummer, und gerade
+// Slots gehören links (dieselbe Parität wie in rhythmTick()).
+function clickFor(h) {
+  if (h % 2 === 1) return CLICK_MID;
+  const side = (h / 2) % 2 === 0 ? 'L' : 'R';
+  // Vibriert dort ein Clip, ist der Schlag schon besetzt.
+  return clipBySide(side) ? null : CLICK_GHOST;
+}
+
+const clickRunning = () =>
+  state.clickOn && state.rhythmOn && state.mode === MODE.RHYTHMIC;
+
+function clickTick() {
+  if (!clickRunning() || !audioCtx) return;
+  const half  = beatInterval() / 2;
+  const nowMs = performance.now();
+  // Der Versatz zwischen den beiden Uhren wird JEDES MAL neu bestimmt und
+  // nicht einmal beim Start: die Audio-Uhr läuft an der Soundkarte und driftet
+  // gegen performance.now() um zig ppm — über eine halbe Stunde sind das
+  // hörbare Millisekunden. Bei 300 ms Vorlauf kann sich daraus nichts
+  // aufsummieren.
+  const epoch = audioCtx.currentTime - nowMs / 1000;
+  const until = nowMs + CLICK_LOOKAHEAD_MS;
+  let h = Math.max(state.clickHalf, Math.ceil((nowMs - state.anchor) / half), 0);
+  for (; state.anchor + h * half < until; h++) {
+    const at = state.anchor + h * half;
+    // Verpasst (Stocken der Seite): überspringen, nicht nachholen — dieselbe
+    // Regel wie bei den Schlägen selbst, aus demselben Grund.
+    if (at < nowMs) continue;
+    const tone = clickFor(h);
+    if (tone) playClick(at / 1000 + epoch, tone);
+  }
+  state.clickHalf = h;
+  clickPending = clickPending.filter(x => x.at > audioCtx.currentTime);
+}
+
+function startClicks() {
+  if (!clickRunning() || state.clickTimer) return;
+  if (!audio()) return;             // Browser ohne Web Audio: still, nicht kaputt
+  state.clickHalf = 0;
+  clickTick();
+  state.clickTimer = setInterval(clickTick, CLICK_TICK_MS);
+}
+
+function stopClicks() {
+  clearInterval(state.clickTimer);
+  state.clickTimer = null;
+  state.clickHalf = 0;
+  for (const x of clickPending) { try { x.osc.stop(); } catch (e) {} }
+  clickPending = [];
+}
+
+// Nach einem Ankersprung (Tempowechsel) neu aufsetzen: was eingetaktet ist,
+// liegt auf dem alten Raster.
+function resyncClicks() {
+  if (!state.clickTimer) return;
+  stopClicks();
+  startClicks();
+}
+
+function renderClickBtn() {
+  const b = $('clickBtn');
+  b.textContent = `Klickton: ${state.clickOn ? 'an' : 'aus'}`;
+  b.classList.toggle('on', state.clickOn);
+  b.setAttribute('aria-pressed', String(state.clickOn));
 }
 
 // ---- Rendering -----------------------------------------------------
@@ -1486,8 +1871,73 @@ function reanchorRhythm() {
 // renderClips(). null heißt: der Clip hat noch nichts gemeldet.
 const BATT_ORANGE = 15;
 
-const battLabel = c => (c.batt == null ? '' : ` · ${c.batt} %`);
 const battLow = c => c.batt != null && c.batt < BATT_ORANGE;
+
+// ---- Akkusymbol ------------------------------------------------------
+// Fünf Kammern statt der Prozentzahl, die hier früher stand. Die Zahl sah
+// nach mehr Information aus, als sie war: der Clip hat keinen Fuel Gauge,
+// er misst eine Zellspannung und rechnet sie über eine Kurve um (SOC_CURVE
+// in board.cpp), und niemand handelt bei 63 % anders als bei 61 %. Fünf
+// Stufen sind grob genug, dass ein Ausreißer die Anzeige nicht bewegt, und
+// fein genug, um „noch lange" von „gleich leer" zu unterscheiden.
+const BATT_CELLS = 5;
+
+// Die Sicherheitsreserve zählt NICHT mit. Unter BATTERY_PCT_SHUTDOWN (3 %,
+// src/config.h) schaltet sich der Clip auf Akkubetrieb selbst ab — tief
+// entladen ist, was einen LiPo umbringt —, diese letzten Prozent bekommt der
+// Träger also nie zu laufen. Die fünf Kammern spannen deshalb 3…100 % und
+// nicht 0…100 %: die letzte Kammer ist leer, wenn der Clip aufhört, nicht
+// wenn es die Zelle täte.
+const BATT_RESERVE_PCT = 3;
+
+// Nach unten sofort, nach oben erst mit Abstand — dieselbe Regel und derselbe
+// Wert, mit denen die Firmware ihre LED-Bänder gegen Zappeln sichert
+// (BATTERY_PCT_BAND_HYST in src/config.h). Eine Zelle, die genau auf einer
+// Kammergrenze liegt, kippt sonst bei jeder Messung hin und her, und das ist
+// die eine Bewegung, die eine grobe Anzeige gerade nicht machen soll.
+const BATT_BAND_HYST = 4;
+
+// Wie viele Kammern bei diesem Ladestand gefüllt sind. Aufgerundet, damit je
+// angefangene 20 % Verbrauch genau eine Kammer leer läuft: volle Zelle fünf,
+// ab dem ersten verbrauchten Fünftel vier.
+function battCellsFor(pct) {
+  const usable = (pct - BATT_RESERVE_PCT) / (100 - BATT_RESERVE_PCT) * 100;
+  if (usable <= 0) return 0;
+  return Math.min(BATT_CELLS, Math.ceil(usable / (100 / BATT_CELLS)));
+}
+
+// Dasselbe mit Gedächtnis: die zuletzt gezeigte Kammerzahl hängt am Clip, denn
+// die Hysterese braucht sie. Fallen darf die Anzeige sofort — ein Akku, der
+// leerer wird, soll das sagen —, steigen erst, wenn der Messwert die Grenze um
+// BATT_BAND_HYST hinter sich gelassen hat.
+function battCells(clip) {
+  if (clip.batt == null) return null;
+  const raw  = battCellsFor(clip.batt);
+  const prev = clip.battCells;
+  clip.battCells =
+    (prev == null || raw <= prev || battCellsFor(clip.batt - BATT_BAND_HYST) >= raw)
+      ? raw : prev;
+  return clip.battCells;
+}
+
+// Geometrie in viewBox-Einheiten: Gehäuse 0,6…25,8 breit, fünf Kammern zu
+// 3,6 im Raster 4,65 ab 2,4 — die letzte endet bei 24,6 und damit innerhalb
+// der 1,2 breiten Kontur.
+function batteryIcon(clip) {
+  const n = battCells(clip);
+  if (n == null) return '';   // ältere Firmware meldet kein B-Feld
+  let cells = '';
+  for (let i = 0; i < BATT_CELLS; i++) {
+    cells += `<rect class="cell${i < n ? ' on' : ''}" x="${(2.4 + i * 4.65).toFixed(2)}"`
+           + ' y="3" width="3.6" height="8" rx="0.8"/>';
+  }
+  return `<svg class="batt${battLow(clip) ? ' low' : ''}" viewBox="0 0 30 14"`
+       + ' width="30" height="14" role="img"'
+       + ` aria-label="Akku ${n} von ${BATT_CELLS}">`
+       + '<rect class="shell" x="0.6" y="0.6" width="25.8" height="12.8" rx="2.6"/>'
+       + '<rect class="cap" x="27.2" y="4.4" width="2.2" height="5.2" rx="1"/>'
+       + cells + '</svg>';
+}
 
 function renderClips() {
   // Before the early return below, not after it: losing the last clip is
@@ -1504,7 +1954,7 @@ function renderClips() {
     const el = document.createElement('span');
     el.className = 'chip';
     el.dataset.side = c.side;
-    el.innerHTML = `<span class="dot"></span>${c.side === 'L' ? 'Links' : 'Rechts'}${battLabel(c)}`;
+    el.innerHTML = `<span class="dot"></span>${c.side === 'L' ? 'Links' : 'Rechts'}${batteryIcon(c)}`;
     const x = document.createElement('button');
     x.textContent = '✕';
     x.onclick = () => disconnectClip(c);
@@ -1574,10 +2024,37 @@ $('markerWin').addEventListener('input', e => {
 
 $('bpm').addEventListener('input', e => {
   state.bpm = +e.target.value;
-  $('bpmVal').textContent = state.bpm + ' bpm';
+  $('bpmVal').textContent = rhythmLabel(state.bpm);
   pushBpm(state.bpm);
   reanchorRhythm();
 });
+
+// Plus/Minus neben den Schiebereglern. Sie schreiben den Wert nicht selbst
+// weiter, sondern setzen ihn am Regler und loesen dort ein input-Ereignis aus:
+// damit laeuft jede Aenderung — senden, entprellen, den zweiten Regler
+// nachziehen, den Takt neu ankern — weiter durch genau einen Handler je
+// Regler. Zwei Wege in denselben Zustand waeren zwei Wege, die auseinander-
+// laufen koennen.
+//
+// Die Schrittweite kommt vom Regler, kann aber an der Taste ueberschrieben
+// werden (data-step) — siehe die Begruendung am bpm-Regler im Markup.
+// Der neue Wert nach einem Tastendruck, auf den Bereich des Reglers begrenzt.
+// Eigene Funktion, weil genau hier die Fehler sitzen, die am Geraet niemand
+// sieht: ein Schritt, der am Anschlag darueber hinauslaeuft, oder eine
+// Schrittweite aus dem falschen Attribut.
+function nudgedValue(input, stepAttr, dir) {
+  const step = (+stepAttr || +input.step || 1) * dir;
+  return Math.min(+input.max, Math.max(+input.min, +input.value + step));
+}
+
+document.querySelectorAll('.nudge').forEach(b =>
+  b.addEventListener('click', () => {
+    const input = b.closest('.slider').querySelector('input[type=range]');
+    const next  = nudgedValue(input, b.dataset.step, +b.dataset.nudge);
+    if (next === +input.value) return;   // am Anschlag: nichts senden
+    input.value = next;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }));
 
 document.querySelectorAll('.intensity').forEach(el =>
   el.addEventListener('input', e => {
@@ -1586,15 +2063,14 @@ document.querySelectorAll('.intensity').forEach(el =>
     pushIntensity(state.intensity);
   }));
 
-// "P" is honoured by the firmware in every mode the app can select, so
-// these three work from either panel, running or stopped. Both panels
-// carry a copy of the row — the selector picks up all six buttons.
-document.querySelectorAll('[data-pulse]').forEach(b =>
-  b.addEventListener('click', () => {
-    const t = b.dataset.pulse;
-    if (t === 'both') broadcast('P');
-    else sendCmd(clipBySide(t), 'P');
-  }));
+// Die manuellen Impulstasten („Links / Beidseitig / Rechts") sind aus der
+// Patienten-App entfernt. Ein Reiz, den man sich selbst auf Knopfdruck gibt,
+// ist keine Rueckmeldung auf den eigenen Gang — er hat mit dem Schritt nichts
+// zu tun, den er kommentieren soll, und macht die Vibration von einem Signal
+// zu einer Taste. Zum Pruefen der Hardware gibt es sie weiterhin in
+// tools/development_app.html. Das "P"-Kommando selbst bleibt im Protokoll:
+// pulseBeat() faellt darauf zurueck, wenn ein Clip den Takt nicht selbst
+// stellen kann (siehe ble.h).
 
 $('rhythmBtn').addEventListener('click', () => {
   if (state.rhythmOn) stopRhythm(); else startRhythm();
@@ -1609,6 +2085,26 @@ $('refractoryBtn').addEventListener('click', () => {
 });
 
 $('feedbackBtn').addEventListener('click', () => setFeedbackOn(!state.feedbackOn));
+
+// Klickton an/aus. audio() steht hier und nicht erst in startClicks(), damit
+// der AudioContext unter einer echten Nutzergeste entsteht — wird der Schalter
+// vor dem Start umgelegt, ist das der einzige Tipper, der dafür in Frage kommt.
+$('clickBtn').addEventListener('click', () => {
+  state.clickOn = !state.clickOn;
+  renderClickBtn();
+  if (state.clickOn) { audio(); startClicks(); } else stopClicks();
+});
+
+// Auf-/zuklappen der Antwort auf „Warum vibriert meine Einlegesohle?".
+// aria-expanded wird mitgeführt, nicht nur das hidden-Attribut: für jemanden,
+// der die Seite vorlesen lässt, ist ein Knopf ohne diesen Zustand ein Knopf,
+// bei dem nichts passiert.
+$('whyBtn').addEventListener('click', () => {
+  const btn  = $('whyBtn');
+  const open = btn.getAttribute('aria-expanded') === 'true';
+  btn.setAttribute('aria-expanded', String(!open));
+  $('whyText').hidden = open;
+});
 
 // Catches midnight while the page sits open with nobody walking — the
 // per-step check alone would leave yesterday's score on screen until the
@@ -1695,6 +2191,8 @@ if (relockBtn) relockBtn.addEventListener('click', () => {
 loadActivity();
 syncUiFromState();
 renderFeedbackBtn();
+renderRhythmBtn();
+renderClickBtn();
 renderClips();
 renderBlock();
 wireCalendar();

@@ -34,7 +34,9 @@ fällt Pages auf `novapace.github.io` zurück.
 - Bluetooth an, und für Chrome die Berechtigung **„Geräte in der Nähe"**
   (Android 12+) bzw. **Standort** darunter. Fehlt sie, findet der Scan stumm
   nichts.
-- Clip einschalten und **~21 s warten** — vorher advertisiert er nicht.
+- Clip einschalten und **~6 s warten** — vorher advertisiert er nicht. Die
+  Warmlaufphase des Sensors läuft danach noch etwa 15 s; verbinden geht schon
+  währenddessen, Schritte werden erst danach gezählt.
 - Der Clip darf nicht schon mit einem anderen Gerät oder einem zweiten
   offenen Tab verbunden sein.
 
