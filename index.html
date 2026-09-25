@@ -92,6 +92,19 @@
   .card > h2 { margin: 0 0 12px; font-size: 15px; font-weight: 700; color: var(--dim);
                text-transform: uppercase; letter-spacing: 0.6px; }
 
+  /* ---- Kartenkopf mit Schalter ----------------------------------------
+     „Steuerung" links, der Vibrations-Schalter rechts auf derselben Hoehe.
+     Er gehoert dorthin, weil er als einziges Bedienelement dieser Karte in
+     BEIDEN Modi dasselbe bedeutet: die Regler darunter wechseln mit dem
+     Modus, der Schalter nicht. Oben rechts steht er ausserdem immer an
+     derselben Stelle, statt einmal ueber und einmal unter anderen Reglern.
+     wrap, weil „STEUERUNG" + „Vibration" + Schalter + „an" auf einem sehr
+     schmalen Telefon nicht in eine Zeile passen — dann rutscht der Schalter
+     darunter, statt dass etwas abgeschnitten wird. */
+  .cardhead { display: flex; align-items: center; justify-content: space-between;
+              flex-wrap: wrap; gap: 8px 14px; margin-bottom: 12px; }
+  .cardhead > h2 { margin: 0; }
+
   /* ---- Aktivitätsscore ---- */
   /* --panel is only a shade off white, so the cards carry a border as well
      — without it they dissolve into the page. */
@@ -179,8 +192,8 @@
      zeigt den Zustand.
      Das Wort daneben ist nicht schmueckend: Farbe und Stellung allein sind
      fuer rot-gruen-schwache Augen und bei Sonne auf dem Display zu wenig. */
-  .switchrow { display: flex; align-items: center; gap: 14px; }
-  .switchrow .lbl { flex: 1; font-size: 19px; font-weight: 600; }
+  .switchrow { display: flex; align-items: center; gap: 12px; }
+  .switchrow .lbl { flex: none; font-size: 19px; font-weight: 600; }
   .switchrow .state { font-size: 18px; font-weight: 700; color: var(--dim);
                       min-width: 2.6em; text-align: right; }
   .switchrow .state.on { color: var(--accent); }
@@ -343,7 +356,30 @@
   </section>
 
   <section class="card ctl">
-    <h2>Steuerung</h2>
+    <!-- Beide Schalter stehen hier oben, nicht mehr in ihrem Modus-Panel: sie
+         bedeuten in beiden Modi dasselbe und sollen deshalb in beiden an
+         derselben Stelle stehen. Sichtbar ist immer genau einer — setMode()
+         schaltet um. Getrennte Elemente und nicht eines fuer beide, weil sie
+         an getrennten Zustaenden haengen (feedbackOn / rhythmOn): ein
+         gemeinsamer Schalter muesste beim Moduswechsel entscheiden, welchen
+         der beiden er gerade meint, und genau da entstehen die Faelle, in
+         denen ein Patient Vibration in einem Modus bekommt, den er
+         abgeschaltet hat. -->
+    <div class="cardhead">
+      <h2>Steuerung</h2>
+      <div class="switchrow" id="swFeedback">
+        <span class="lbl" id="feedbackLbl">Vibration</span>
+        <button id="feedbackBtn" class="sw" role="switch" aria-checked="true"
+                aria-labelledby="feedbackLbl"><span class="knob"></span></button>
+        <span class="state on" id="feedbackState">an</span>
+      </div>
+      <div class="switchrow" id="swRhythm" hidden>
+        <span class="lbl" id="rhythmLbl">Vibration</span>
+        <button id="rhythmBtn" class="sw" role="switch" aria-checked="false"
+                aria-labelledby="rhythmLbl"><span class="knob"></span></button>
+        <span class="state" id="rhythmState">aus</span>
+      </div>
+    </div>
     <div class="clips" id="clips"><span class="hint">Kein Clip verbunden.</span></div>
     <div class="modes">
       <button data-mode="0" class="active">Feedbackmodus</button>
@@ -352,15 +388,6 @@
 
     <!-- Mode 0 — marker feedback -->
     <div class="panel active" id="panel0">
-      <!-- Zuerst der Schalter, dann die Staerke: erst ob ueberhaupt, dann wie
-           viel. Frueher stand hier ein Knopf „Start"/„Stopp" — siehe
-           .switchrow im CSS, warum daraus ein Schalter wurde. -->
-      <div class="switchrow">
-        <span class="lbl" id="feedbackLbl">Vibration</span>
-        <button id="feedbackBtn" class="sw" role="switch" aria-checked="true"
-                aria-labelledby="feedbackLbl"><span class="knob"></span></button>
-        <span class="state on" id="feedbackState">an</span>
-      </div>
       <div class="slider">
         <div class="head"><span>Vibrationsstärke</span><b id="int0Val">7</b></div>
         <div class="row">
@@ -432,17 +459,15 @@
 
     <!-- Mode 1 — rhythmic cueing, timed by THIS device -->
     <div class="panel" id="panel1">
-      <!-- data-step="5" an den Tasten, nicht am Schieber: der Schieber behaelt
-           seine Schrittweite von 1 bpm, damit die Therapeutin genau treffen
-           kann. Eine Taste, die 1 bpm weiterschiebt, waere hier aber wirkungs-
-           los zu bedienen — 60 und 61 bpm ergeben beide „1 pro Sekunde", ein
-           Druck sieht also aus, als sei nichts passiert. -->
+      <!-- Der Regler laeuft ueber den INDEX der Rasterstellen (0..20), nicht
+           ueber bpm: so ist jede Stelle — mit dem Schieber wie mit den Tasten
+           — genau ein Zehntel der angezeigten Zahl. Siehe RHYTHM_STEPS. -->
       <div class="slider">
         <div class="head"><span>Vibrationshäufigkeit</span><b id="bpmVal">1 pro Sekunde</b></div>
         <div class="row">
-          <button class="nudge" data-nudge="-1" data-step="5" aria-label="Seltener vibrieren">−</button>
-          <input type="range" id="bpm" min="20" max="240" step="1" value="60">
-          <button class="nudge" data-nudge="1" data-step="5" aria-label="Häufiger vibrieren">+</button>
+          <button class="nudge" data-nudge="-1" aria-label="Seltener vibrieren">−</button>
+          <input type="range" id="bpm" min="0" max="20" step="1" value="10">
+          <button class="nudge" data-nudge="1" aria-label="Häufiger vibrieren">+</button>
         </div>
       </div>
       <div class="slider">
@@ -458,16 +483,6 @@
            einer Praxis oder im Bus eine Zumutung. -->
       <div class="btnrow">
         <button id="clickBtn" class="toggle" aria-pressed="false">Klickton: aus</button>
-      </div>
-      <!-- Derselbe Schalter wie im Feedbackmodus, an derselben Stelle und mit
-           derselben Beschriftung: in beiden Modi entscheidet er, ob der Clip
-           vibriert. Zwei Bedienformen fuer dieselbe Frage waeren zwei Dinge
-           zum Lernen, und gelernt wird hier ungern. -->
-      <div class="switchrow">
-        <span class="lbl" id="rhythmLbl">Vibration</span>
-        <button id="rhythmBtn" class="sw" role="switch" aria-checked="false"
-                aria-labelledby="rhythmLbl"><span class="knob"></span></button>
-        <span class="state" id="rhythmState">aus</span>
       </div>
     </div>
   </section>
@@ -1264,6 +1279,10 @@ async function setMode(mode) {
     b.classList.toggle('active', +b.dataset.mode === mode));
   document.querySelectorAll('.panel').forEach(p =>
     p.classList.toggle('active', p.id === 'panel' + mode));
+  // Im Kartenkopf ist immer genau ein Schalter sichtbar: der des laufenden
+  // Modus. Die Panels darunter wechseln, der Platz oben rechts nicht.
+  $('swFeedback').hidden = mode !== MODE.FEEDBACK;
+  $('swRhythm').hidden   = mode !== MODE.RHYTHMIC;
 
   // Mode before beats — the clip must already be in Rhythmic when the
   // first "P" lands, or it would be answered as a Feedback-mode manual
@@ -1331,6 +1350,35 @@ async function setFeedbackOn(on) {
 // Nur die Beschriftung. Gerechnet, gespeichert und gesendet wird unveraendert
 // in bpm (state.bpm, "B" im Protokoll, siehe src/comms/ble.h) — die Anzeige
 // ist der einzige Ort, an dem die Einheit wechselt.
+// Die Rasterstellen des Haeufigkeitsreglers, von „alle 2 Sekunden" bis
+// „2 pro Sekunde". Eine Tabelle und keine gleichmaessige Schrittweite, weil
+// die Anzeige unterhalb von einem Reiz pro Sekunde die Einheit wechselt:
+// gleichmaessig in Hertz gerastert, spraenge die Sekundenangabe unten
+// unregelmaessig (2,0 / 1,7 / 1,4 / 1,3 / 1,1) und saehe schlicht kaputt aus.
+// Gerastert wird deshalb, was der Patient LIEST — jede Stelle aendert die
+// angezeigte Zahl um genau 0,1, in welcher Einheit sie gerade steht.
+//
+// Unten der Kehrwert (60/Sekunden), oben das Vielfache (60*Hertz), beides auf
+// ganze bpm gerundet, weil das Protokoll nur ganze bpm kennt ("B%03u", ble.h).
+// Die Rundung faellt in der Anzeige nicht auf: rhythmLabel() rechnet aus dem
+// gerundeten bpm zurueck und trifft dieselbe Zehntelstelle wieder — genau das
+// prueft der Test.
+const RHYTHM_SECS = [2.0, 1.9, 1.8, 1.7, 1.6, 1.5, 1.4, 1.3, 1.2, 1.1];
+const RHYTHM_HZ   = [1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0];
+const RHYTHM_STEPS = RHYTHM_SECS.map(x => Math.round(60 / x))
+                       .concat(RHYTHM_HZ.map(x => Math.round(60 * x)));
+
+// Die Rasterstelle, die diesem bpm am naechsten liegt. Ein Clip bringt seinen
+// gespeicherten Wert mit, und der muss nicht auf dem Raster liegen — etwa nach
+// einem Firmware-Stand mit anderer Skala.
+function rhythmIndex(bpm) {
+  let best = 0;
+  for (let i = 1; i < RHYTHM_STEPS.length; i++) {
+    if (Math.abs(RHYTHM_STEPS[i] - bpm) < Math.abs(RHYTHM_STEPS[best] - bpm)) best = i;
+  }
+  return best;
+}
+
 function rhythmLabel(bpm) {
   const num = v => (Math.round(v * 10) / 10).toString().replace('.', ',');
   const perSec = bpm / 60;
@@ -1371,7 +1419,7 @@ function syncUiFromState() {
   $('markerWinVal').textContent = state.window + ' Schritte';
   $('cutoff').value = state.cutoff;
   $('cutoffVal').textContent = state.cutoff;
-  $('bpm').value = state.bpm;
+  $('bpm').value = rhythmIndex(state.bpm);
   $('bpmVal').textContent = rhythmLabel(state.bpm);
   document.querySelectorAll('.intensity').forEach(el => { el.value = state.intensity; });
   ['int0Val', 'int1Val'].forEach(id => { $(id).textContent = state.intensity; });
@@ -2023,7 +2071,7 @@ $('markerWin').addEventListener('input', e => {
 });
 
 $('bpm').addEventListener('input', e => {
-  state.bpm = +e.target.value;
+  state.bpm = RHYTHM_STEPS[+e.target.value];
   $('bpmVal').textContent = rhythmLabel(state.bpm);
   pushBpm(state.bpm);
   reanchorRhythm();
